@@ -1,5 +1,16 @@
 import { defineConfig } from 'vite';
 import path from 'node:path';
+import fs from 'node:fs';
+
+// The "how it was made" article lives in artifacts/; the build publishes it next to the game
+// at <site>/how-it-was-made/.
+function publishArticle() {
+  return {
+    name: 'publish-article',
+    apply: 'build',
+    closeBundle() { fs.cpSync('artifacts/how-it-was-made', 'dist/how-it-was-made', { recursive: true }); },
+  };
+}
 
 // `npm run dev:blender` watches characters/: saving a .blend (or dropping a new one in)
 // re-exports it and reloads the browser. Plain `npm run dev` never touches Blender.
@@ -36,7 +47,7 @@ export default defineConfig({
   // Relative asset URLs, so the build runs from a subfolder such as
   // jorgeper.github.io/wino-and-cookie/ as well as from a domain root.
   base: './',
-  plugins: watching ? [blenderWatch()] : [],
+  plugins: [publishArticle(), ...(watching ? [blenderWatch()] : [])],
   // Don't let Vite's own reload fire on every GLB write; the plugin reloads once when done.
   server: watching ? { watch: { ignored: ['**/public/models/**'] } } : {},
 });
