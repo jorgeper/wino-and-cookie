@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { buildForest, makeLog, makeMarker, PALETTE } from '../forest.js';
+import { buildForest, makeLog, makeMarker, modelWidth, Scatter, PALETTE } from '../forest.js';
 import { toward, clamp, makeDots } from './common.js';
 
 const X0 = 8.5;        // how far each thrower stands from the middle
@@ -7,14 +7,14 @@ const G = 14;          // gravity on the acorn
 const VMAX = 17.5;     // hardest throw, m/s
 const HEARTS = 5;
 
-/** Three logs stacked in the middle: [x, y, radius] of each, seen from the side. */
+/** Three tree stumps stacked in the middle: [x, y, radius] of the round each one blocks, seen from the side. */
 const PILE = [[-0.62, 0.6, 0.6], [0.62, 0.6, 0.6], [0, 1.66, 0.6]];
 
 export default {
   id: 'toss',
   title: 'Acorn Toss',
   emoji: '🌰',
-  blurb: 'Take turns lobbing acorns over the log pile. Mind the wind. A bonk on the head counts double.',
+  blurb: 'Take turns lobbing acorns over the pile of stumps. Mind the wind. A bonk on the head counts double.',
   controls: '<kbd>Drag</kbd> back and let go to throw · or <kbd>↑↓</kbd> angle <kbd>←→</kbd> power <kbd>Space</kbd> throw',
   touch: { stick: false, buttons: [], hint: '<b>Drag</b> back and let go to throw' },
 
@@ -30,7 +30,17 @@ export default {
     forest.name = 'forest';
     root.add(forest);
 
-    for (const [x, y, r] of PILE) root.add(ctx.own(makeLog([x, y, -1.5], [x, y, 1.5], r, y > 1 ? PALETTE.wood : PALETTE.woodDark)));
+    // The pile is the tree-stump model three times over: two side by side and one on top.
+    // (Plain logs if the model is missing.)
+    const stumpWidth = modelWidth('tree-stump');
+    if (stumpWidth) {
+      const pile = new Scatter();
+      for (const [x, y, r] of PILE) {
+        const across = (r * 2 * 1.1) / stumpWidth; // the roots flare a little past the trunk the acorn hits
+        pile.add('tree-stump', [x, y - r, 0], [across, r * 2, across], y > 1 ? 0xffffff : 0xe6dccb, { rotY: 1 + x * 2.1 });
+      }
+      root.add(pile.build());
+    } else for (const [x, y, r] of PILE) root.add(ctx.own(makeLog([x, y, -1.5], [x, y, 1.5], r, y > 1 ? PALETTE.wood : PALETTE.woodDark)));
 
     // The acorn: a nut with a darker cap and a little stalk.
     const acorn = new THREE.Group();

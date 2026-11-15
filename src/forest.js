@@ -54,9 +54,13 @@ export async function loadScenery() {
     const mat = new THREE.MeshStandardMaterial({ map: mesh.material.map, roughness: 0.92, metalness: 0 });
     if (mat.map) mat.map.anisotropy = 8;
     applySceneryShader(mat, name); // leaf / bark / stone detail, off unless switched on in the settings
-    MODELS[name] = { geo, mat };
+    // `radius`: half the model's width, for a model 1 unit tall (used to keep the view clear).
+    MODELS[name] = { geo, mat, radius: Math.max(bb.max.x - bb.min.x, bb.max.z - bb.min.z) / 2 / h };
   }));
 }
+
+/** How wide a scenery model is when it is 1 unit tall, or 0 if it isn't loaded. */
+export const modelWidth = (name) => (MODELS[name] ? MODELS[name].radius * 2 : 0);
 
 export const PALETTE = {
   grass: 0x8cc76a, grassDark: 0x79b85c, grassLight: 0xa5d67c,
@@ -82,6 +86,7 @@ export class Scatter {
 
   build() {
     const group = new THREE.Group();
+    group.userData.blockers = []; // model instances that could stand in the camera's way (see clearView)
     const m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler();
     const p = new THREE.Vector3(), s = new THREE.Vector3(), c = new THREE.Color();
     for (const b of this.buckets.values()) {
@@ -98,6 +103,13 @@ export class Scatter {
       mesh.receiveShadow = true;
       mesh.frustumCulled = false;
       group.add(mesh);
+      if (model && !Array.isArray(b.items[0]?.scale)) {
+        group.userData.blockers.push({ mesh, items: b.items.map((it, i) => {
+          const base = new THREE.Matrix4();
+          mesh.getMatrixAt(i, base);
+          return { x: it.pos[0], z: it.pos[2], h: it.scale, r: it.scale * model.radius * 0.85, base, k: 1 };
+        }) });
+      }
     }
     return group;
   }
@@ -157,12 +169,94 @@ export function addGroundPatch(sc, rng, x, z, r) {
     { shadow: false, rotY: rng() * 6, mat: 'ground' });
 }
 
+/** Outline (convex hull) of everywhere `inside(x, z)` is true, sampled every metre. Null if there is nowhere. */
+function outlineOf(inside, reach) {
+  const pts = [];
+  for (let x = -reach; x <= reach; x++) for (let z = -reach; z <= reach; z++) if (inside(x, z)) pts.push([x, z]);
+  if (pts.length < 3) return null;
+  pts.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const cross = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const half = (list) => {
+    const out = [];
+    for (const p of list) { while (out.length >= 2 && cross(out.at(-2), out.at(-1), p) <= 0) out.pop(); out.push(p); }
+    return out.slice(0, -1);
+  };
+  const hull = [...half(pts), ...half(pts.reverse())];
+  return hull.length >= 3 ? hull : null;
+}
+
+/** How far along a ray (from cx, cz in unit direction dx, dz) it first crosses the outline; Infinity if it never does. */
+function reachOutline(hull, cx, cz, dx, dz) {
+  let best = Infinity;
+  for (let i = 0; i < hull.length; i++) {
+    const a = hull[i], b = hull[(i + 1) % hull.length];
+    const ex = b[0] - a[0], ez = b[1] - a[1], den = dx * ez - dz * ex;
+    if (Math.abs(den) < 1e-9) continue;
+    const t = ((a[0] - cx) * ez - (a[1] - cz) * ex) / den, u = ((a[0] - cx) * dz - (a[1] - cz) * dx) / den;
+    if (t > 0 && u >= 0 && u <= 1 && t < best) best = t;
+  }
+  return best;
+}
+
+const POKE = 1.0; // a bush or boulder may rise this far (metres) into the line of sight before it is put away
+const TREE = 2.0; // anything taller than this counts as a tree
+
+/**
+ * Keeps the camera's view of the play area clear. Anything tall enough to cover part of the
+ * play area from where the camera is, and any tree standing between the camera and the play
+ * area, shrinks away, and grows back when the camera moves on. Things beside or behind the play area stay.
+ * @param blockers from Scatter.build()
+ * @param hull outline of the play area
+ * @param dt seconds since the last call; Infinity to switch at once (a new game, a camera cut)
+ */
+function clearView(blockers, hull, camera, dt) {
+  const cx = camera.position.x, cz = camera.position.z, cy = camera.position.y;
+  // A camera over the play area itself has nothing between it and the game.
+  let sign = 0, over = true;
+  for (let i = 0; i < hull.length && over; i++) {
+    const a = hull[i], b = hull[(i + 1) % hull.length];
+    const side = Math.sign((b[0] - a[0]) * (cz - a[1]) - (b[1] - a[1]) * (cx - a[0]));
+    if (side && sign && side !== sign) over = false;
+    if (side) sign = side;
+  }
+  const m = new THREE.Matrix4(), v = new THREE.Vector3(), step = dt * 5;
+  for (const { mesh, items } of blockers) {
+    let dirty = false;
+    items.forEach((it, i) => {
+      let hide = false;
+      if (!over && it.h > POKE) {
+        const ox = it.x - cx, oz = it.z - cz, d = Math.hypot(ox, oz) || 1e-6;
+        // Its middle and both edges, as seen from above.
+        for (let side = -1; side <= 1 && !hide; side++) {
+          const px = ox - (oz / d) * it.r * side, pz = oz + (ox / d) * it.r * side, dist = Math.hypot(px, pz) || 1e-6;
+          const edge = reachOutline(hull, cx, cz, px / dist, pz / dist);
+          if (edge === Infinity || dist >= edge) continue; // not between the camera and the play area
+          // A tree in that stretch always goes: even one too low to cover the play area stands in
+          // the foreground, where it fills the bottom of a tall (phone) screen. Smaller things go
+          // only if they rise into the lowest line of sight over this spot, which is the one to the
+          // nearest edge of the play area.
+          // (A tree counts as in that stretch by its trunk; one whose branches merely reach the
+          // edge of it is beside the play area, and stays to frame the picture.)
+          if ((it.h > TREE && side === 0) || it.h > cy * (1 - dist / edge) + POKE) hide = true;
+        }
+      }
+      const goal = hide ? 0 : 1;
+      if (it.k === goal) return;
+      it.k += Math.max(-step, Math.min(step, goal - it.k));
+      mesh.setMatrixAt(i, m.copy(it.base).scale(v.setScalar(Math.max(it.k, 1e-4))));
+      dirty = true;
+    });
+    if (dirty) mesh.instanceMatrix.needsUpdate = true;
+  }
+}
+
 /**
  * A clearing in the woods: grass, a ring of trees, and small decorations.
  * @param keepOut (x, z) => true where nothing may be placed (the play area)
+ * @param view (x, z) => true for the ground the camera must always see; the play area unless given
  * @param surface (x, z) => 'bare' | { h, color } | undefined: what grows there (see grass.js)
  */
-export function buildForest({ seed = 1, clearing = 18, keepOut = () => false, solidOut = keepOut, trees = 90, deco = 1, surface } = {}) {
+export function buildForest({ seed = 1, clearing = 18, keepOut = () => false, solidOut = keepOut, view = keepOut, trees = 90, deco = 1, surface } = {}) {
   const rng = mulberry32(seed);
   const group = new THREE.Group();
 
@@ -191,7 +285,11 @@ export function buildForest({ seed = 1, clearing = 18, keepOut = () => false, so
   for (let i = 0; i < 26 * deco; i++) { const [x, z] = ring(clearing - 5, clearing + 6); if (open(x, z)) addBush(sc, rng, x, z, 0.8 + rng() * 0.7); }
   for (let i = 0; i < 7 * deco; i++) { const [x, z] = ring(clearing - 4, clearing + 6); if (open(x, z)) addStump(sc, rng, x, z); }
   for (let i = 0; i < 46; i++) { const [x, z] = ring(0, clearing + 20); addGroundPatch(sc, rng, x, z, 1.2 + rng() * 3); }
-  group.add(sc.build());
+  const scattered = sc.build();
+  group.add(scattered);
+  const hull = outlineOf(view, clearing + 34);
+  /** Called by the engine every frame, after the camera has moved. */
+  group.userData.clearView = (camera, dt) => { if (hull) clearView(scattered.userData.blockers, hull, camera, dt); };
   group.add(createGrass({ seed, clearing, surface })); // planted by the engine, from the settings
 
   // A few puffy clouds, far away.

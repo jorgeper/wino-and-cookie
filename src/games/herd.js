@@ -23,6 +23,7 @@ export default {
 
     const inPenArea = (x, z, pad = 0) => x > PEN.x0 - pad && x < PEN.x1 + pad && z > PEN.z0 - pad && z < PEN.z1 + pad;
     const forest = buildForest({ seed: 52, clearing: M + 3, keepOut: (x, z) => inPenArea(x, z, 0.4),
+      view: (x, z) => Math.hypot(x, z) < M || inPenArea(x, z, 0.4), // the whole meadow is the game, not just the pen
       solidOut: (x, z) => Math.hypot(x, z) < M + 1, deco: 1.5,
       // Straw in the pen; the meadow is grazed short so the little ones stay visible.
       surface: (x, z) => (inPenArea(x, z, 0.3) ? 'bare' : Math.hypot(x, z) < M ? { h: 0.1, density: 0.75, wide: 1 } : undefined) });

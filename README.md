@@ -17,7 +17,7 @@ The launcher lets you pick a game and who you play as. `1`–`8` start a game, `
 | 🎈 Balloon Volleyball | 1 v 1 over a net with a slow, floaty balloon. First to 5 | WASD, Space jumps; hitting it in the air is a spike |
 | 🛋️ Pillow Sumo | Shove the other stuffy off the cushion. First to 3 rounds | WASD, Space pounces (ring under you is bright when ready) |
 | 🐣 Herd the Babies | Eight little stuffies run away from you. Get them into the pen before sunset | WASD, Space hops |
-| 🌰 Acorn Toss | Take turns lobbing acorns at each other over a log pile, with a wind that changes every throw. Five hearts each; a bonk on the head costs two | Drag back and let go (like a slingshot), or ↑↓ angle, ←→ power, Space throws |
+| 🌰 Acorn Toss | Take turns lobbing acorns at each other over a pile of tree stumps, with a wind that changes every throw. Five hearts each; a bonk on the head costs two | Drag back and let go (like a slingshot), or ↑↓ angle, ←→ power, Space throws |
 | ✨ Firefly Jars | Night. Catch more fireflies than your friend in a minute; they shy away, some fly high, gold ones count triple. Your jar glows brighter as it fills | WASD, Space jumps |
 | ⛄ Snowball Fort | A snowed-in forest. Lob snowballs over the walls, knock blocks out of their fort and dodge theirs. First to 5 hits | WASD, hold Space to wind up (the ring shows where it lands), let go to throw |
 
@@ -66,7 +66,7 @@ Characters are full size here (Wino is twice Cookie's size); the games use close
 * `src/graphics.js`: the settings and their defaults, shadows, anti-aliasing and the post effects. `src/settings.js` is the panel.
 * `src/character.js`: steering is in world space so players and AI share it; knock-back, a floor that can drop away, clip preview.
 * `src/fabric.js`: plush fabric shading and fur shells. Presets are at the top of the file.
-* `src/forest.js`: the forest kit, drawn with instancing. Trees, bushes, rocks, stumps, mushrooms and flowers are the models in `assets/<name>/<name>.glb`; any new model dropped into its folder is loaded automatically.
+* `src/forest.js`: the forest kit, drawn with instancing. Trees, bushes, rocks, stumps, mushrooms and flowers are the models in `assets/<name>/<name>.glb`; any new model dropped into its folder is loaded automatically. The forest also keeps the camera's view clear: a tree standing between the camera and a game's play area (its `keepOut`, or `view` if given) shrinks away, which matters most on an upright phone where the camera pulls far back.
 * `src/scenery-shader.js`: the leaf / bark / stone detail. `SCENERY_KINDS` says what each model is made of; add a line for a new model.
 * `src/grass.js`: the grass. A game passes `surface(x, z)` to `buildForest` to say where it is bare or mown.
 * `src/physics.js`: ball, ball-vs-character, character separation, fence segments.

@@ -350,15 +350,16 @@ export async function createEngine() {
         push[i].set(c.position.x, c.position.y, c.position.z, c.radius * 1.5 + 0.12);
       }
       grassUniforms.uGrassPushCount.value = pushers;
-      const k = current.fresh ? 1 : 1 - Math.exp(-4 * dt);
+      const fresh = current.fresh, k = fresh ? 1 : 1 - Math.exp(-4 * dt);
       current.fresh = false;
       if (!current.ctx.freeCamera) {
         camera.position.lerp(camGoal.pos, k);
         camLook.lerp(camGoal.look, k);
         camera.lookAt(camLook);
       }
-      const clouds = current.root.getObjectByName('forest')?.userData.clouds;
-      if (clouds) clouds.rotation.y += dt * 0.004;
+      const forest = current.root.getObjectByName('forest');
+      if (forest?.userData.clouds) forest.userData.clouds.rotation.y += dt * 0.004;
+      forest?.userData.clearView?.(camera, fresh ? Infinity : dt); // no trees between the camera and the game
       if (bannerTimer > 0 && (bannerTimer -= dt) <= 0) el.banner.classList.remove('pop');
     }
     pressed.clear();
