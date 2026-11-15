@@ -27,7 +27,7 @@ export const DEFAULTS = Object.freeze({
   grassHeight: 1,
   wind: 1,               // sways grass and (with scenery detail) foliage
   // Light & shadow
-  lighting: 'auto',      // auto = whatever the game asks for | day | golden | dusk
+  lighting: 'auto',      // auto = whatever the game asks for | day | golden | dusk | night
   shadows: 'standard',   // standard | soft | crisp
   ao: false,             // ambient occlusion (GTAO)
   // Camera

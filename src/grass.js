@@ -253,7 +253,7 @@ export function updateGrassDetail(group, camera) {
 export const grassCount = (group) => group.children.reduce((n, m) => n + m.count, 0);
 
 /** 1 while grass is switched on: the ground under it then looks like a thatch of blades. */
-export const groundUniforms = { uGroundGrass: { value: 1 } };
+export const groundUniforms = { uGroundGrass: { value: 1 }, uGroundSnow: { value: 0 } };
 
 /**
  * Paint the ground itself like matted grass (short streaks in a few directions, darker than
@@ -273,7 +273,7 @@ export function applyGroundShader(material) {
     shader.fragmentShader = shader.fragmentShader
       .replace('#include <common>', /* glsl */ `#include <common>
         varying vec2 vGroundPos;
-        uniform float uGroundGrass;
+        uniform float uGroundGrass, uGroundSnow;
         float gndHash(vec2 p) { // cheap hash without trigonometry
           vec3 p3 = fract(vec3(p.xyx) * 0.1031);
           p3 += dot(p3, p3.yzx + 33.33);
@@ -296,9 +296,17 @@ export function applyGroundShader(material) {
             float streaky = mix(0.6, 1.0, smoothstep(0.3, 0.72, streaks / 3.0)) * (0.92 + 0.16 * gndNoise(p * 1.7));
             tone = mix(tone, streaky, fade);
           }
-          diffuseColor.rgb *= mix(1.0, tone, uGroundGrass);
+          diffuseColor.rgb *= mix(1.0, tone, uGroundGrass * (1.0 - uGroundSnow));
+        }
+        if (uGroundSnow > 0.0) {
+          // Fresh snow: soft drifts of blue shade and a fine sparkle up close.
+          vec2 p = vGroundPos;
+          float drift = gndNoise(p * 0.45) * 0.6 + gndNoise(p * 1.9) * 0.4;
+          float grain = gndNoise(p * 90.0) * (1.0 - smoothstep(0.3, 1.0, length(fwidth(p)) * 90.0));
+          vec3 snow = mix(vec3(0.80, 0.87, 0.97), vec3(0.97, 0.98, 1.0), drift) * (0.97 + 0.06 * grain);
+          diffuseColor.rgb = mix(diffuseColor.rgb, snow, uGroundSnow);
         }`);
   };
-  material.customProgramCacheKey = () => 'grass-ground-v2';
+  material.customProgramCacheKey = () => 'grass-ground-v3';
   return material;
 }

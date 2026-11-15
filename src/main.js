@@ -7,9 +7,12 @@ import soccer from './games/soccer.js';
 import volley from './games/volley.js';
 import sumo from './games/sumo.js';
 import herd from './games/herd.js';
+import toss from './games/toss.js';
+import fireflies from './games/fireflies.js';
+import snow from './games/snow.js';
 import testing from './games/testing.js';
 
-const GAMES = [soccer, volley, sumo, herd, testing];
+const GAMES = [soccer, volley, sumo, herd, toss, fireflies, snow, testing];
 const $ = (id) => document.getElementById(id);
 const params = new URLSearchParams(location.search);
 const auto = params.has('auto'); // ?auto plays the player's side too (handy for watching / testing)

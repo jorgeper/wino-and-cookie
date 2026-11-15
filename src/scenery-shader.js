@@ -21,6 +21,7 @@ export const sceneryUniforms = {
   uScnDetail: { value: 0 },   // 0 = off, otherwise pattern strength
   uScnTime: { value: 0 },
   uScnWind: { value: 1 },
+  uScnSnow: { value: 0 },     // 0..1: snow settled on everything that faces the sky
 };
 
 // foliage: [green counts, warm colours count, upper part counts, everything counts]
@@ -119,7 +120,7 @@ export function applySceneryShader(material, kind, scale = [1, 1, 1]) {
         varying vec3 vScnPos;
         varying float vScnY;
         uniform vec4 uScnFoliage;
-        uniform float uScnBase, uScnTrunkTop, uScnSheen, uScnDetail;
+        uniform float uScnBase, uScnTrunkTop, uScnSheen, uScnDetail, uScnSnow;
         float scnFol = 0.0;   // how much this pixel is foliage
         float scnBump = 0.0;  // procedural height, metres`)
       .replace('#include <map_fragment>', /* glsl */ `#include <map_fragment>
@@ -177,6 +178,15 @@ export function applySceneryShader(material, kind, scale = [1, 1, 1]) {
           scnBump *= amount;
         }`)
       .replace('#include <normal_fragment_maps>', /* glsl */ `#include <normal_fragment_maps>
+        if (uScnSnow > 0.0) {
+          // Snow lies on whatever faces up: thick on branches and boulder tops, none on trunks' sides.
+          float up = inverseTransformDirection(normal, viewMatrix).y;
+          float lumpy = scnValue(vScnPos * 3.1) * 0.3 + scnValue(vScnPos * 11.0) * 0.12;
+          float cover = smoothstep(0.34, 0.6, up + lumpy - (1.0 - uScnSnow) * 0.9);
+          vec3 snow = vec3(0.93, 0.96, 1.0) * (0.95 + 0.07 * scnValue(vScnPos * 40.0));
+          diffuseColor.rgb = mix(diffuseColor.rgb * mix(1.0, 0.86, uScnSnow), snow, cover); // what shows is a little wintry-dull
+          scnFol *= 1.0 - cover;
+        }
         if (uScnDetail > 0.0) {
           // Bump-map the procedural height using screen-space derivatives.
           vec3 dpdx = dFdx(-vViewPosition), dpdy = dFdy(-vViewPosition);
@@ -198,6 +208,6 @@ export function applySceneryShader(material, kind, scale = [1, 1, 1]) {
           reflectedLight.indirectDiffuse += material.diffuseColor * rim * 0.35 * uScnSheen;
         }`);
   };
-  material.customProgramCacheKey = () => 'scenery-detail-v1';
+  material.customProgramCacheKey = () => 'scenery-detail-v2';
   return material;
 }

@@ -52,7 +52,7 @@ kbd {
 #who button[aria-pressed='true'] { background: var(--accent); color: #fff; }
 #who button:hover:not([aria-pressed='true']) { background: #f6e6cb; }
 
-#cards { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: clamp(10px, 1.4vw, 20px); margin-top: auto; }
+#cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: clamp(10px, 1.4vw, 20px); margin-top: auto; }
 .card {
   position: relative; text-align: left; padding: 1.1rem 1.2rem 1.2rem; border: 0; border-radius: 26px;
   background: var(--cream); box-shadow: var(--shadow); transition: transform 0.16s ease, box-shadow 0.16s ease;
@@ -234,3 +234,7 @@ body.photo .tg-side, body.photo #tg-roster, body.photo #tg-hint, body.photo #tg-
 .keys kbd { font-size: 0.82em; min-width: 1.4em; padding: 0 0.3em; }
 .sheet .keys { margin-top: 0.8rem; font-size: 0.95rem; line-height: 2; color: var(--ink); }
 @media (max-height: 700px) { .card .keys { display: none; } }
+
+/* ---------- hearts (Acorn Toss) ---------- */
+.hearts { font-size: 1.05rem; letter-spacing: 0.05em; }
+.hearts .gone { filter: grayscale(1); opacity: 0.3; }

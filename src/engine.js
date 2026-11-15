@@ -14,6 +14,8 @@ export const MOODS = {
   day: { top: 0x7cc4f5, horizon: 0xe6f6ff, sun: 0xfff1d6, sunI: 3.0, hemiSky: 0xe4f2ff, hemiGround: 0x86b56c, hemiI: 1.05, env: 0.35, sunDir: [6, 14, 7] },
   golden: { top: 0x9cc3e8, horizon: 0xffe6c2, sun: 0xffd09a, sunI: 3.1, hemiSky: 0xffeedd, hemiGround: 0x8fae68, hemiI: 0.9, env: 0.3, sunDir: [10, 9, 6] },
   dusk: { top: 0x4a5596, horizon: 0xf8b189, sun: 0xffa56e, sunI: 2.3, hemiSky: 0xb3b2e6, hemiGround: 0x7a8f66, hemiI: 0.9, env: 0.26, sunDir: [12, 5, 4] },
+  night: { top: 0x070b24, horizon: 0x1c2852, sun: 0x9fb4ff, sunI: 0.5, hemiSky: 0x2c3a78, hemiGround: 0x101c24, hemiI: 0.38, env: 0.04, sunDir: [-5, 9, -8], fog: [22, 90] },
+  winter: { top: 0x9db7d9, horizon: 0xe9eff7, sun: 0xfff3e2, sunI: 2.5, hemiSky: 0xe2ecff, hemiGround: 0xc4d0e2, hemiI: 1.15, env: 0.4, sunDir: [-7, 10, 6], fog: [28, 115] },
   // Indoor looks for the Testing Ground (plain backdrop, from three-stuff-demo).
   studio: { top: 0xeef0f3, horizon: 0xeef0f3, sun: 0xffffff, sunI: 3.0, hemiSky: 0xffffff, hemiGround: 0xb9c1ce, hemiI: 0.9, env: 0.35, sunDir: [3, 14, 4.5], fog: [35, 140] },
   warm: { top: 0xf1e6da, horizon: 0xf1e6da, sun: 0xffd3a6, sunI: 3.0, hemiSky: 0xfff0dd, hemiGround: 0xc2b4a8, hemiI: 0.85, env: 0.3, sunDir: [10, 7, 5], fog: [30, 120] },
@@ -21,7 +23,7 @@ export const MOODS = {
   bedtime: { top: 0x232a40, horizon: 0x232a40, sun: 0xffb36b, sunI: 1.2, hemiSky: 0x6f7fb8, hemiGround: 0x2a2840, hemiI: 0.45, env: 0.12, sunDir: [-4, 9, 5], fog: [6, 28] },
 };
 const FOG = [40, 150];
-const OUTDOOR = ['day', 'golden', 'dusk'];
+const OUTDOOR = ['day', 'golden', 'dusk', 'night'];
 
 const $ = (id) => document.getElementById(id);
 
@@ -139,7 +141,18 @@ export async function createEngine() {
   addEventListener('keyup', (e) => keys.delete(e.code));
   addEventListener('blur', () => keys.clear());
   addEventListener('pointerdown', () => sfx.unlock());
+  // Mouse / touch on the game itself (not on buttons or panels), for games that aim by dragging.
+  const pointer = { x: 0, y: 0, down: false, pressed: false, released: false };
+  const cv = renderer.domElement;
+  const track = (e) => { pointer.x = e.clientX; pointer.y = e.clientY; };
+  cv.addEventListener('pointerdown', (e) => { if (e.button !== 0) return; track(e); pointer.down = pointer.pressed = true; cv.setPointerCapture?.(e.pointerId); });
+  cv.addEventListener('pointermove', track);
+  const lift = (e) => { if (!pointer.down) return; track(e); pointer.down = false; pointer.released = true; };
+  cv.addEventListener('pointerup', lift);
+  cv.addEventListener('pointercancel', lift);
   const input = {
+    /** Position in CSS pixels; `pressed` / `released` are true for the one frame it happens. */
+    pointer,
     down: (...codes) => codes.some((c) => keys.has(c)),
     hit: (...codes) => codes.some((c) => pressed.has(c)),
     /** Set by a game whose camera looks along +X (from behind the player's side) instead of -Z. */
@@ -235,6 +248,7 @@ export async function createEngine() {
     stop();
     paused = false;
     input.front = false;
+    sceneryUniforms.uScnSnow.value = groundUniforms.uGroundSnow.value = 0;
     const root = new THREE.Group();
     scene.add(root);
     const chars = [];
@@ -245,6 +259,8 @@ export async function createEngine() {
       entryOf: (id) => assets[id].entry,
       /** True when the "Game view" setting asks for the view from behind the player's side. Also turns the keys to match. */
       get frontView() { return (input.front = graphics.settings.view === 'front'); },
+      /** Cover the forest in snow (0..1). Reset when the next game starts. */
+      setSnow(amount) { sceneryUniforms.uScnSnow.value = groundUniforms.uGroundSnow.value = amount; },
       /** Set to true by a game that drives the camera itself (the Testing Ground). */
       freeCamera: false,
       /** Distance from the camera to what should be sharp (toy camera). */
@@ -340,6 +356,7 @@ export async function createEngine() {
       if (bannerTimer > 0 && (bannerTimer -= dt) <= 0) el.banner.classList.remove('pop');
     }
     pressed.clear();
+    pointer.pressed = pointer.released = false;
     if (current?.grass) updateGrassDetail(current.grass, camera);
     graphics.render(current?.ctx.focusDistance ?? camera.position.distanceTo(camLook));
     current?.game.afterRender?.();

@@ -1,6 +1,6 @@
 # Wino and Cookie Games
 
-Four cozy mini-games in a low-poly forest, starring Wino the penguin and Cookie the deer,
+Seven cozy mini-games in a low-poly forest, starring Wino the penguin and Cookie the deer,
 plus a Testing Ground for trying out the characters, their animations and the graphics options.
 
 ```
@@ -9,7 +9,7 @@ npm run dev          # http://localhost:5173
 npm run dev:blender  # same, and re-exports characters/*.blend whenever you save one
 ```
 
-The launcher lets you pick a game and who you play as. `1`–`5` start a game, `Esc` pauses, `M` mutes, `G` opens the graphics settings.
+The launcher lets you pick a game and who you play as. `1`–`8` start a game, `Esc` pauses, `M` mutes, `G` opens the graphics settings.
 
 | Game | How it plays | Controls |
 |---|---|---|
@@ -17,6 +17,9 @@ The launcher lets you pick a game and who you play as. `1`–`5` start a game, `
 | 🎈 Balloon Volleyball | 1 v 1 over a net with a slow, floaty balloon. First to 5 | WASD, Space jumps; hitting it in the air is a spike |
 | 🛋️ Pillow Sumo | Shove the other stuffy off the cushion. First to 3 rounds | WASD, Space pounces (ring under you is bright when ready) |
 | 🐣 Herd the Babies | Eight little stuffies run away from you. Get them into the pen before sunset | WASD, Space hops |
+| 🌰 Acorn Toss | Take turns lobbing acorns at each other over a log pile, with a wind that changes every throw. Five hearts each; a bonk on the head costs two | Drag back and let go (like a slingshot), or ↑↓ angle, ←→ power, Space throws |
+| ✨ Firefly Jars | Night. Catch more fireflies than your friend in a minute; they shy away, some fly high, gold ones count triple. Your jar glows brighter as it fills | WASD, Space jumps |
+| ⛄ Snowball Fort | A snowed-in forest. Lob snowballs over the walls, knock blocks out of their fort and dodge theirs. First to 5 hits | WASD, hold Space to wind up (the ring shows where it lands), let go to throw |
 
 ## Graphics settings (the ⚙ button, or `G`)
 
@@ -29,7 +32,7 @@ Saved in the browser. **Reset** goes back to the defaults; **Make it pretty** sw
 | Scenery | Scenery detail, Strength | Shaders on the forest models: leaf clumps with sun glowing through and wind sway, grooved bark (dashes on birch), speckled and cracked stone |
 | Grass | Grass, Density, Height | Tufts of blades between everything; mown short on the soccer pitch, taller under the trees |
 | | Wind | How hard the grass and the foliage sway |
-| Light & shadow | Lighting | Auto uses each game's own mood; Day / Golden hour / Dusk force one |
+| Light & shadow | Lighting | Auto uses each game's own mood; Day / Golden hour / Dusk / Night force one |
 | | Shadows | Standard, Extra soft (VSM blur), Crisp HD (4096 map) |
 | | Ambient occlusion | GTAO: darkens creases and contact areas |
 | Camera | Game view | Soccer and volleyball: from behind your side looking at the opponent (default), or from the sideline. The movement keys turn with it |
@@ -39,7 +42,7 @@ Saved in the browser. **Reset** goes back to the defaults; **Make it pretty** sw
 
 The defaults are the original look plus grass.
 
-## Testing Ground (`5`, or `?game=testing`)
+## Testing Ground (`8`, or `?game=testing`)
 
 The white grid room that used to be the separate `three-stuff-demo`. Click a character to take control:
 the mouse is captured and turns the camera. WASD / arrows move · Shift run · Space jump · scroll zooms ·
@@ -80,6 +83,12 @@ Sizes in the games differ from the Testing Ground (Wino 1.25, Cookie 1) so the g
 
 ## Handy URL switches
 
-* `?game=soccer` (or `volley`, `sumo`, `herd`, `testing`) skips the launcher.
+* `?game=soccer` (or `volley`, `sumo`, `herd`, `toss`, `fireflies`, `snow`, `testing`) skips the launcher.
 * `?auto` lets the computer play your side too.
 * `?speed=4` fast-forwards.
+
+## Night and snow
+
+* `MOODS.night` and `MOODS.winter` in `src/engine.js` are the two new looks. Night is also a choice under Lighting.
+* Snow is not new textures: `ctx.setSnow(1)` turns on a shader that lays snow on whatever faces the sky (branches, boulders, stumps) and whitens the ground, so every existing model works in winter. The engine switches it off again when the next game starts.
+* `glowPoints()` in `src/games/common.js` draws the fireflies, the stars and the falling snow. `input.pointer` (mouse / touch on the game itself) is what Acorn Toss aims with.
