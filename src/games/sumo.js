@@ -14,6 +14,7 @@ export default {
   emoji: '🛋️',
   blurb: 'Bump your friend off the giant cushion. Pounce for a bigger shove. First to 3.',
   controls: '<kbd>WASD</kbd> move · <kbd>Space</kbd> pounce',
+  touch: { buttons: [{ code: 'Space', label: 'Pounce' }] },
 
   create(ctx) {
     const { root, hud, sfx, input } = ctx;

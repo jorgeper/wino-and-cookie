@@ -238,3 +238,135 @@ body.photo .tg-side, body.photo #tg-roster, body.photo #tg-hint, body.photo #tg-
 /* ---------- hearts (Acorn Toss) ---------- */
 .hearts { font-size: 1.05rem; letter-spacing: 0.05em; }
 .hearts .gone { filter: grayscale(1); opacity: 0.3; }
+
+/* ---------- phones and tablets ---------- */
+/* Safe areas: the notch and the home bar (viewport-fit=cover lets the game fill the whole screen). */
+:root {
+  --sat: env(safe-area-inset-top, 0px); --sar: env(safe-area-inset-right, 0px);
+  --sab: env(safe-area-inset-bottom, 0px); --sal: env(safe-area-inset-left, 0px);
+}
+html { -webkit-text-size-adjust: 100%; overscroll-behavior: none; -webkit-tap-highlight-color: transparent; }
+body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; touch-action: manipulation; }
+#app canvas { touch-action: none; }
+#menu { overflow-y: auto; overscroll-behavior: contain; padding-left: max(clamp(16px, 3.5vw, 44px), var(--sal)); padding-right: max(clamp(16px, 3.5vw, 44px), var(--sar)); padding-bottom: max(clamp(16px, 3.5vw, 44px), var(--sab)); }
+#menu header { padding-right: 3.4rem; margin-bottom: 12px; } /* room for the gear */
+.who-row > span, #who button { white-space: nowrap; }
+body.touch .card .num { display: none; } /* the number is a keyboard shortcut */
+@media (min-width: 901px) { body.touch #cards { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+#gear { top: calc(16px + var(--sat)); right: calc(16px + var(--sar)); }
+#settings { top: calc(68px + var(--sat)); right: calc(16px + var(--sar)); max-height: calc(100% - 84px - var(--sat) - var(--sab)); }
+#corner { top: calc(16px + var(--sat)); right: calc(68px + var(--sar)); }
+#scorebar { top: calc(16px + var(--sat)); }
+#hint { bottom: calc(16px + var(--sab)); }
+#pause-btn { font-size: 0.8rem; }
+.tg-side { top: calc(16px + var(--sat)); left: calc(16px + var(--sal)); }
+#tg-title { cursor: pointer; }
+#tg-title::after { content: ' ▾'; color: var(--tg-muted); }
+.tg-side.collapsed #tg-title::after { content: ' ▸'; }
+.tg-side.collapsed #tg-title { margin: 0; }
+.tg-side.collapsed .tg-help > :not(h1), .tg-side.collapsed .tg-inspector { display: none; }
+body:not(.touch) .touch-only, body.touch .keys-only, body.touch .card .keys, body.touch #tg-roster kbd { display: none; }
+
+/* Hover effects only where there is something to hover with: on touch they stick after a tap. */
+@media (hover: none) {
+  .card:hover { transform: none; box-shadow: var(--shadow); }
+  #gear:hover { transform: none; }
+}
+
+/* Small screens: the score moves under the buttons, and everything gets a little smaller. */
+@media (max-width: 760px) {
+  #scorebar { top: calc(66px + var(--sat)); gap: 6px; }
+  .pill { font-size: 1.05rem; padding: 0.3rem 0.8rem; min-height: 2.3rem; }
+  .pill.mid { font-size: 0.9rem; }
+  .pill b { font-size: 1.25rem; }
+  #banner { top: 30%; }
+  #menu .tag { font-size: 1rem; }
+  .card { padding: 0.8rem 0.9rem 0.9rem; border-radius: 20px; }
+  .card h2 { font-size: 1.1rem; }
+  .sheet { padding: 1.4rem 1.2rem 1.2rem; }
+  .tg-side { top: calc(68px + var(--sat)); }
+}
+/* In between (a phone on its side): the score sits on the left so it clears the buttons. */
+@media (min-width: 761px) and (max-width: 900px) { #scorebar { left: calc(12px + var(--sal)); transform: none; } }
+@media (max-width: 760px) { #scorebar { max-width: calc(100vw - 16px); flex-wrap: wrap; justify-content: center; } }
+/* A phone on its side: very little height, so one row of small pills and four cards across. */
+@media (max-height: 520px) {
+  .pill { font-size: 1.05rem; padding: 0.25rem 0.8rem; min-height: 2.2rem; }
+  .pill.mid { font-size: 0.9rem; }
+  .pill b { font-size: 1.25rem; }
+  #menu h1 { font-size: clamp(1.8rem, 5vw, 2.6rem); }
+  #menu .tag { margin: 0.3rem 0 0.5rem; font-size: 0.95rem; }
+  .sheet { padding: 1rem 1.4rem; }
+  .sheet h2 { font-size: 1.7rem; }
+  .sheet p { font-size: 1.1rem; }
+  .sheet .row { margin-top: 0.8rem; }
+}
+@media (max-height: 520px) and (min-width: 600px) {
+  #cards { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+  .card { padding: 0.5rem 0.8rem 0.6rem; border-radius: 18px; }
+  .card .emoji { font-size: 1.5rem; }
+  .card h2 { margin: 0.1rem 0 0; font-size: 1rem; }
+  .card .num { display: none; }
+}
+
+/* ---------- on-screen controls (touch.js) ---------- */
+#pad { position: fixed; inset: 0; pointer-events: none; -webkit-user-select: none; user-select: none; }
+/* In the Testing Ground the controls appear once a character is picked; never in photo mode. */
+body:has(#testing:not([hidden])):not(.tg-controlling) #pad, body.photo #pad { display: none; }
+#stick-zone {
+  position: absolute; left: 0; bottom: 0; width: min(46vw, 400px); height: min(60vh, 380px);
+  pointer-events: auto; touch-action: none;
+}
+#stick {
+  position: absolute; left: calc(max(var(--sal), 18px) + 72px); top: calc(100% - max(var(--sab), 18px) - 72px);
+  width: 128px; height: 128px; margin: -64px 0 0 -64px; border-radius: 50%;
+  background: rgba(255, 248, 234, 0.3); border: 3px solid rgba(255, 255, 255, 0.65);
+  box-shadow: 0 6px 20px rgba(74, 59, 50, 0.22); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+  transition: opacity 0.2s;
+}
+#stick.live { background: rgba(255, 248, 234, 0.42); }
+#knob {
+  position: absolute; left: 50%; top: 50%; width: 60px; height: 60px; margin: -30px 0 0 -30px; border-radius: 50%;
+  background: var(--cream); box-shadow: 0 3px 10px rgba(74, 59, 50, 0.35);
+}
+#pad-buttons { position: absolute; right: max(var(--sar), 18px); bottom: max(var(--sab), 18px); width: 220px; height: 220px; }
+.pad-btn {
+  position: absolute; width: 76px; height: 76px; padding: 0; border-radius: 50%; pointer-events: auto; touch-action: none;
+  background: rgba(255, 248, 234, 0.88); border: 3px solid #fff; box-shadow: 0 6px 18px rgba(74, 59, 50, 0.3);
+  font-weight: 900; font-size: 0.95rem; color: var(--ink); -webkit-user-select: none; user-select: none;
+}
+.pad-btn.b0 { right: 0; bottom: 0; width: 104px; height: 104px; font-size: 1.2rem; background: var(--accent); border-color: #ffd9c2; color: #fff; }
+.pad-btn.b1 { right: 116px; bottom: 6px; }
+.pad-btn.b2 { right: 10px; bottom: 118px; }
+.pad-btn.b3 { right: 104px; bottom: 96px; }
+.pad-btn.down { transform: scale(0.92); filter: brightness(0.9); }
+
+/* Touch screens: the frame rate only shows while the graphics panel is open, and the reminder
+   under the game sits between the stick and the buttons, then fades away. */
+body.touch #fps { display: none; }
+body.touch:has(#settings:not([hidden])) #fps { display: block; left: calc(12px + var(--sal)); bottom: auto; top: calc(16px + var(--sat)); }
+body.touch #hint {
+  max-width: calc(100vw - 500px); white-space: normal; text-align: center; border-radius: 18px;
+  animation: hint-away 0.8s 7s forwards;
+}
+@keyframes hint-away { to { opacity: 0; visibility: hidden; } }
+@media (max-width: 860px) {
+  body.touch #hint { max-width: calc(100vw - 24px); bottom: calc(250px + var(--sab)); }
+}
+@media (max-width: 860px) and (max-height: 520px) {
+  body.touch #hint { bottom: auto; top: calc(64px + var(--sat)); }
+  #stick { width: 112px; height: 112px; margin: -56px 0 0 -56px; }
+  .pad-btn.b0 { width: 92px; height: 92px; }
+  .pad-btn.b1 { right: 102px; }
+  .pad-btn.b2 { bottom: 104px; }
+}
+body.touch #tg-hint { bottom: calc(76px + var(--sab)); }
+body.touch #tg-roster { bottom: calc(16px + var(--sab)); }
+/* Testing Ground on touch: the folded panel is just its title, and nothing sits under the thumbs. */
+.tg-side.collapsed { width: auto; right: auto; }
+body.touch .tg-side { max-height: calc(100% - 200px - var(--sat)); }
+body.touch #tg-status { display: none; }
+@media (max-width: 700px) {
+  body.touch #tg-roster { bottom: calc(176px + var(--sab)); }
+  body.touch #tg-hint { bottom: calc(236px + var(--sab)); }
+}

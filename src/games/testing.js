@@ -84,6 +84,7 @@ export default {
   emoji: '🧪',
   blurb: 'Not a game. Walk Wino and Cookie around a blank room and try out animations and graphics.',
   sandbox: true, // no score, no pause screen, no result card
+  touch: { buttons: [{ code: 'Space', label: 'Jump' }] }, // shown while a character is selected
 
   create(ctx) {
     const { root, camera, renderer, input, graphics } = ctx;
@@ -162,6 +163,8 @@ export default {
 
     let selected = null, hovered = null, skeletonHelper = null, lastUnlock = 0;
     const mouseLocked = () => document.pointerLockElement === canvas;
+    // Touch screens (see touch.js): no mouse to capture; drag orbits, the on-screen stick walks.
+    const onTouch = () => document.body.classList.contains('touch');
     const hex = (c) => `#${c.color.getHexString()}`;
 
     // ------------------------------------------------------------ UI
@@ -176,14 +179,15 @@ export default {
     characters.forEach((c, i) => {
       const b = document.createElement('button');
       b.innerHTML = `<span class="tg-dot" style="background:${hex(c)}"></span>${c.name} <kbd>${i + 1}</kbd>`;
-      b.onclick = () => { selectAndLook(c); b.blur(); };
+      // With no Esc key, tapping the character you already control lets go of it.
+      b.onclick = () => { if (onTouch() && selected === c) select(null); else selectAndLook(c); b.blur(); };
       c.rosterButton = b;
       rosterEl.appendChild(b);
     });
 
     function updateHint() {
-      if (!selected) { hintEl.textContent = 'Click a character to take control'; hintEl.classList.remove('hidden'); }
-      else if (mouseLocked()) hintEl.classList.add('hidden');
+      if (!selected) { hintEl.textContent = `${onTouch() ? 'Tap' : 'Click'} a character to take control`; hintEl.classList.remove('hidden'); }
+      else if (mouseLocked() || onTouch()) hintEl.classList.add('hidden');
       else { hintEl.textContent = 'Click to look around with the mouse · Esc to release'; hintEl.classList.remove('hidden'); }
     }
     function nudgeHint() {
@@ -227,6 +231,7 @@ export default {
       }
       hintEl.classList.remove('flash');
       ring.visible = !!c;
+      document.body.classList.toggle('tg-controlling', !!c); // brings out the on-screen stick
       controls.enablePan = !c;
       if (c) ring.material.color.copy(c.color);
       if (!c && mouseLocked()) document.exitPointerLock();
@@ -237,7 +242,7 @@ export default {
     // While you control a character the mouse is captured (pointer lock): moving it turns the
     // camera, no button needed. Esc frees the cursor; Esc again releases the character.
     function lockMouse() {
-      if (mouseLocked() || !canvas.requestPointerLock) return;
+      if (mouseLocked() || !canvas.requestPointerLock || onTouch()) return;
       // Returns a promise in modern browsers; it can reject right after an unlock (browser cooldown).
       try { canvas.requestPointerLock()?.catch?.(() => {}); } catch { /* not allowed right now */ }
     }
@@ -245,6 +250,11 @@ export default {
       select(c);
       if (c) lockMouse();
     }
+
+    // The panel folds away under its title, which matters on a phone where it covers the room.
+    const side = ui.querySelector('.tg-side');
+    side.classList.toggle('collapsed', onTouch() && Math.min(innerWidth, innerHeight) < 600);
+    $('tg-title').onclick = () => side.classList.toggle('collapsed');
 
     insp.speed.oninput = () => {
       if (!selected) return;
@@ -483,6 +493,7 @@ export default {
         exitPhoto();
         photo.dispose();
         if (mouseLocked()) document.exitPointerLock();
+        document.body.classList.remove('tg-controlling');
         if (skeletonHelper) { root.remove(skeletonHelper); skeletonHelper.dispose?.(); }
         for (const fn of off) fn();
         tags.innerHTML = '';

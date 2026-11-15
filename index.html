@@ -2,7 +2,11 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Wino and Cookie" />
+    <meta name="theme-color" content="#cfe9f7" />
     <title>Wino and Cookie Games</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐧</text></svg>" />
   </head>
@@ -20,8 +24,15 @@
       <div id="hint"></div>
       <div id="corner">
         <button id="mute" title="Sound (M)">🔊</button>
+        <button id="pause-btn" title="Pause (Esc)" aria-label="Pause">❚❚</button>
         <button id="back" title="Back to the game picker">Menu</button>
       </div>
+    </div>
+
+    <!-- On-screen controls for touch screens (touch.js) -->
+    <div id="pad" hidden>
+      <div id="stick-zone"><div id="stick"><div id="knob"></div></div></div>
+      <div id="pad-buttons"></div>
     </div>
 
     <main id="menu" hidden>
@@ -34,7 +45,7 @@
         </div>
       </header>
       <div id="cards"></div>
-      <p class="foot">Press <kbd>1</kbd>–<kbd>8</kbd> to start · <kbd>Esc</kbd> pauses · <kbd>M</kbd> mutes · <kbd>G</kbd> graphics</p>
+      <p class="foot keys-only">Press <kbd>1</kbd>–<kbd>8</kbd> to start · <kbd>Esc</kbd> pauses · <kbd>M</kbd> mutes · <kbd>G</kbd> graphics</p>
     </main>
 
     <div id="pause" class="overlay" hidden>
@@ -62,8 +73,14 @@
     <div id="testing" hidden>
       <aside class="tg-side">
         <section class="tg-card tg-help">
-          <h1>Testing Ground</h1>
-          <ul>
+          <h1 id="tg-title" title="Show or hide this panel">Testing Ground</h1>
+          <ul class="touch-only">
+            <li><b>Tap</b> a character to control it</li>
+            <li><b>Stick</b> move, all the way to run &nbsp;<b>Jump</b> button</li>
+            <li><b>Drag</b> look around &nbsp;<b>Pinch</b> zoom</li>
+            <li><b>Tap its name again</b> below to let go</li>
+          </ul>
+          <ul class="keys-only">
             <li><b>Click</b> a character to control it</li>
             <li><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move &nbsp;<kbd>Shift</kbd> run &nbsp;<kbd>Space</kbd> jump</li>
             <li><b>Mouse</b> look around &nbsp;<b>Scroll</b> zoom</li>
@@ -101,9 +118,9 @@
       <div id="tg-status"></div>
       <div id="tg-photo-bar" hidden>
         <span>Path tracing · <b id="tg-photo-samples">0</b> samples</span>
-        <span class="tg-muted">drag to orbit (restarts)</span>
+        <span class="tg-muted keys-only">drag to orbit (restarts)</span>
         <button id="tg-photo-save">Save PNG</button>
-        <button id="tg-photo-exit" class="ghost">Exit <kbd>Esc</kbd></button>
+        <button id="tg-photo-exit" class="ghost">Exit <kbd class="keys-only">Esc</kbd></button>
       </div>
     </div>
 

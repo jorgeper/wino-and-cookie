@@ -140,12 +140,13 @@ export async function createEngine() {
   });
   addEventListener('keyup', (e) => keys.delete(e.code));
   addEventListener('blur', () => keys.clear());
-  addEventListener('pointerdown', () => sfx.unlock());
+  // iOS only lets sound start from the end of a tap, so listen for those too.
+  for (const type of ['pointerdown', 'pointerup', 'touchend', 'click']) addEventListener(type, () => sfx.unlock());
   // Mouse / touch on the game itself (not on buttons or panels), for games that aim by dragging.
   const pointer = { x: 0, y: 0, down: false, pressed: false, released: false };
   const cv = renderer.domElement;
   const track = (e) => { pointer.x = e.clientX; pointer.y = e.clientY; };
-  cv.addEventListener('pointerdown', (e) => { if (e.button !== 0) return; track(e); pointer.down = pointer.pressed = true; cv.setPointerCapture?.(e.pointerId); });
+  cv.addEventListener('pointerdown', (e) => { if (e.button !== 0) return; track(e); pointer.down = pointer.pressed = true; try { cv.setPointerCapture(e.pointerId); } catch { /* pointer already gone */ } });
   cv.addEventListener('pointermove', track);
   const lift = (e) => { if (!pointer.down) return; track(e); pointer.down = false; pointer.released = true; };
   cv.addEventListener('pointerup', lift);
@@ -155,17 +156,22 @@ export async function createEngine() {
     pointer,
     down: (...codes) => codes.some((c) => keys.has(c)),
     hit: (...codes) => codes.some((c) => pressed.has(c)),
+    /** The on-screen thumb stick (touch.js): x right, y down the screen, length 0..1. */
+    stick: { x: 0, y: 0 },
+    /** On-screen buttons press and release keys by their code, exactly like the keyboard. */
+    press(code) { if (!keys.has(code)) pressed.add(code); keys.add(code); sfx.unlock(); },
+    release(code) { keys.delete(code); },
     /** Set by a game whose camera looks along +X (from behind the player's side) instead of -Z. */
     front: false,
-    /** WASD / arrows as a world-space direction, relative to where the camera looks. */
+    /** WASD / arrows / thumb stick as a world-space direction, relative to where the camera looks. */
     move() {
-      let x = 0, z = 0;
+      let x = this.stick.x, z = this.stick.y;
       if (keys.has('KeyA') || keys.has('ArrowLeft')) x -= 1;
       if (keys.has('KeyD') || keys.has('ArrowRight')) x += 1;
       if (keys.has('KeyW') || keys.has('ArrowUp')) z -= 1;
       if (keys.has('KeyS') || keys.has('ArrowDown')) z += 1;
       const l = Math.hypot(x, z);
-      if (!l) return { x: 0, z: 0 };
+      if (l < 0.25) return { x: 0, z: 0 }; // also the stick's dead zone
       return this.front ? { x: -z / l, z: x / l } : { x: x / l, z: z / l };
     },
   };

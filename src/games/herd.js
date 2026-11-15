@@ -14,6 +14,7 @@ export default {
   emoji: '🐣',
   blurb: 'The little ones scamper away from you. Nudge them all into the pen before sunset.',
   controls: '<kbd>WASD</kbd> move · <kbd>Space</kbd> hop · babies run <i>away</i> from you, so get behind them',
+  touch: { buttons: [{ code: 'Space', label: 'Hop' }], hint: 'Babies run <i>away</i> from you, so get behind them' },
 
   create(ctx) {
     const { root, hud, sfx, input } = ctx;

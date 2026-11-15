@@ -15,6 +15,7 @@ export default {
   emoji: '🎈',
   blurb: 'Keep the balloon off your side of the net. Jump into it for a spike. First to 5.',
   controls: '<kbd>WASD</kbd> move · <kbd>Space</kbd> jump (spike) · watch the balloon\'s shadow',
+  touch: { buttons: [{ code: 'Space', label: 'Jump' }], hint: 'Jump into the balloon for a spike · watch its shadow' },
 
   create(ctx) {
     const { root, hud, sfx, input } = ctx;

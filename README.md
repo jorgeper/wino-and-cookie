@@ -21,6 +21,14 @@ The launcher lets you pick a game and who you play as. `1`–`8` start a game, `
 | ✨ Firefly Jars | Night. Catch more fireflies than your friend in a minute; they shy away, some fly high, gold ones count triple. Your jar glows brighter as it fills | WASD, Space jumps |
 | ⛄ Snowball Fort | A snowed-in forest. Lob snowballs over the walls, knock blocks out of their fort and dodge theirs. First to 5 hits | WASD, hold Space to wind up (the ring shows where it lands), let go to throw |
 
+## Phones and tablets
+
+On a touch screen (iPhone, iPad) the games show a thumb stick on the left and action buttons on the
+right; `src/touch.js` feeds them into the same input the keyboard uses, so a game only has to say
+which buttons it wants (`touch: { buttons: [{ code: 'Space', label: 'Jump' }], hint }` in its definition).
+Pushing the stick all the way sprints. Acorn Toss is played by dragging. Holding the device sideways
+shows the most of each game. Add `?touch` to the address to try the touch controls on a computer.
+
 ## Graphics settings (the ⚙ button, or `G`)
 
 Saved in the browser. **Reset** goes back to the defaults; **Make it pretty** switches on everything that looks good.

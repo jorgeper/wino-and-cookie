@@ -13,6 +13,7 @@ export default {
   emoji: '⚽',
   blurb: 'Three a side in a forest clearing. Bump the ball into the log goal.',
   controls: '<kbd>WASD</kbd> move · <kbd>Shift</kbd> sprint · <kbd>J</kbd> dash · <kbd>Space</kbd> kick / jump · <kbd>K</kbd> switch player',
+  touch: { buttons: [{ code: 'Space', label: 'Kick' }, { code: 'KeyJ', label: 'Dash' }, { code: 'KeyK', label: 'Switch' }], hint: 'Push the stick all the way to sprint · <b>Kick</b> jumps when the ball is far' },
 
   create(ctx) {
     const { root, hud, sfx, input } = ctx;

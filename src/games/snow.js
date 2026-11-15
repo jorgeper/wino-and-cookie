@@ -17,6 +17,7 @@ export default {
   emoji: '⛄',
   blurb: 'A snowy morning. Lob snowballs over the walls, knock holes in their fort, and duck theirs. First to 5 hits.',
   controls: '<kbd>WASD</kbd> move · hold <kbd>Space</kbd> to wind up, let go to throw',
+  touch: { buttons: [{ code: 'Space', label: 'Throw' }], hint: 'Hold <b>Throw</b> to wind up, let go to throw' },
 
   create(ctx) {
     const { root, hud, sfx, input } = ctx;

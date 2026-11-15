@@ -2,6 +2,7 @@ import './style.css';
 import { createEngine } from './engine.js';
 import { sfx } from './audio.js';
 import { initSettings } from './settings.js';
+import { createTouchPad } from './touch.js';
 import lobby from './games/lobby.js';
 import soccer from './games/soccer.js';
 import volley from './games/volley.js';
@@ -18,6 +19,7 @@ const params = new URLSearchParams(location.search);
 const auto = params.has('auto'); // ?auto plays the player's side too (handy for watching / testing)
 
 let engine;
+let pad; // on-screen controls for touch screens
 let playerId;
 let active = null; // game definition being played
 
@@ -28,15 +30,21 @@ function setUrl(def) {
   history.replaceState(null, '', url);
 }
 
+/** The on-screen controls are out only while a game is actually being played. */
+function syncPad() {
+  pad.set(active && !engine.paused && !engine.current?.over ? active : null);
+}
+
 function showMenu() {
   active = null;
+  syncPad();
   setUrl(null);
   $('menu').hidden = false;
   $('end').hidden = true;
   $('pause').hidden = true;
   engine.hud.show(false);
   engine.start(lobby);
-  $('cards').querySelector('button')?.focus();
+  if (!pad.enabled) $('cards').querySelector('button')?.focus(); // keyboard players start on the first card
 }
 
 function play(def) {
@@ -47,6 +55,8 @@ function play(def) {
   engine.hud.show(true);
   setUrl(def);
   engine.start(def, { playerId, auto });
+  $('pause-btn').hidden = !!def.sandbox;
+  syncPad();
   window.__game = engine.current.game; // for poking at from the console
   document.activeElement?.blur();
 }
@@ -56,6 +66,7 @@ function setPaused(p) {
   engine.setPaused(p);
   $('pause-keys').innerHTML = active.controls ?? '';
   $('pause').hidden = !p;
+  syncPad();
 }
 
 function pickCharacter(id) {
@@ -68,6 +79,12 @@ async function boot() {
   engine = await createEngine();
   window.__engine = engine;
   initSettings(engine);
+  pad = createTouchPad(engine.input);
+  // On a touch screen the reminders talk about the buttons on screen, not the keyboard.
+  pad.whenEnabled(() => {
+    for (const def of GAMES) def.controls = def.touch?.hint ?? '';
+    if (active) engine.hud.hint(active.controls);
+  });
 
   // Character picker
   const who = $('who');
@@ -94,6 +111,7 @@ async function boot() {
   engine.onFinish((result) => {
     $('end-title').textContent = result.title;
     $('end-text').textContent = result.text;
+    syncPad();
     setTimeout(() => { if (active) { $('end').hidden = false; $('again').focus(); } }, 1400);
   });
 
@@ -101,6 +119,7 @@ async function boot() {
   $('to-menu').onclick = showMenu;
   $('back').onclick = showMenu;
   $('resume').onclick = () => setPaused(false);
+  $('pause-btn').onclick = (e) => { setPaused(true); e.currentTarget.blur(); };
   $('quit').onclick = showMenu;
   const muteBtn = $('mute');
   const paintMute = () => { muteBtn.textContent = sfx.muted ? '🔇' : '🔊'; };
@@ -119,6 +138,7 @@ async function boot() {
     if (e.code === 'KeyR' && !$('end').hidden) play(active);
   });
   addEventListener('blur', () => { if (!auto) setPaused(true); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden && !auto) setPaused(true); }); // phone locked, app switched
 
   $('loading').remove();
   const direct = GAMES.find((g) => g.id === params.get('game'));

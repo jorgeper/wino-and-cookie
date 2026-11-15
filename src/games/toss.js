@@ -16,6 +16,7 @@ export default {
   emoji: '🌰',
   blurb: 'Take turns lobbing acorns over the log pile. Mind the wind. A bonk on the head counts double.',
   controls: '<kbd>Drag</kbd> back and let go to throw · or <kbd>↑↓</kbd> angle <kbd>←→</kbd> power <kbd>Space</kbd> throw',
+  touch: { stick: false, buttons: [], hint: '<b>Drag</b> back and let go to throw' },
 
   create(ctx) {
     const { root, hud, sfx, input } = ctx;

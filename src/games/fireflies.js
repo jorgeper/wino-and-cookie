@@ -28,6 +28,7 @@ export default {
   emoji: '✨',
   blurb: 'Night in the clearing. Catch more fireflies than your friend before time runs out. Jump for the high ones; gold ones count triple.',
   controls: '<kbd>WASD</kbd> move · <kbd>Space</kbd> jump',
+  touch: { buttons: [{ code: 'Space', label: 'Jump' }] },
 
   create(ctx) {
     const { root, hud, sfx, input } = ctx;
