@@ -1,0 +1,4 @@
+interface:
+  display_name: "Cozy Game Assets"
+  short_description: "Four-view cozy game assets with saved prompts"
+  default_prompt: "Use $cozy-game-assets to generate front, back, left, and right views of a cozy game asset matching the approved tree style and save all four images and their prompts in ./assets/."

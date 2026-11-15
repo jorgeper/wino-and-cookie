@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Wino and Cookie Games</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐧</text></svg>" />
+  </head>
+  <body>
+    <div id="app"></div>
+    <div id="vignette"></div>
+
+    <div id="hud" hidden>
+      <div id="scorebar">
+        <div class="pill" id="hud-left"></div>
+        <div class="pill mid" id="hud-center"></div>
+        <div class="pill" id="hud-right"></div>
+      </div>
+      <div id="banner"></div>
+      <div id="hint"></div>
+      <div id="corner">
+        <button id="mute" title="Sound (M)">🔊</button>
+        <button id="back" title="Back to the game picker">Menu</button>
+      </div>
+    </div>
+
+    <main id="menu" hidden>
+      <header>
+        <h1>Wino and Cookie Games</h1>
+        <p class="tag">Four cozy little games in the forest</p>
+        <div class="who-row">
+          <span>Play as</span>
+          <div id="who" role="group" aria-label="Play as"></div>
+        </div>
+      </header>
+      <div id="cards"></div>
+      <p class="foot">Press <kbd>1</kbd>–<kbd>4</kbd> to start · <kbd>Esc</kbd> pauses · <kbd>M</kbd> mutes</p>
+    </main>
+
+    <div id="pause" class="overlay" hidden>
+      <div class="sheet">
+        <h2>Paused</h2>
+        <div class="row">
+          <button id="resume" class="primary">Keep playing</button>
+          <button id="quit">Back to menu</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="end" class="overlay" hidden>
+      <div class="sheet">
+        <h2 id="end-title"></h2>
+        <p id="end-text"></p>
+        <div class="row">
+          <button id="again" class="primary">Play again</button>
+          <button id="to-menu">Pick another game</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="loading">Fluffing the stuffies…</div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
