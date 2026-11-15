@@ -21,7 +21,8 @@ export default {
     ctx.setMood('golden');
     ctx.setShadowArea(0, 0, 10);
 
-    const forest = buildForest({ seed: 21, clearing: 13, keepOut: (x, z) => Math.abs(x) < CL + 2 && Math.abs(z) < CD + 2 });
+    const forest = buildForest({ seed: 21, clearing: 13, keepOut: (x, z) => Math.abs(x) < CL + 2 && Math.abs(z) < CD + 2,
+      surface: (x, z) => (Math.abs(x) < CL + 0.85 && Math.abs(z) < CD + 0.85 ? 'bare' : undefined) }); // sand court
     forest.name = 'forest';
     root.add(forest);
 
@@ -230,8 +231,15 @@ export default {
         marker.scale.setScalar(P.c.radius * 1.5);
         marker.visible = !ctx.over;
 
-        const far = Math.max(13.5, 22 / ctx.camera.aspect);
-        ctx.cam(ball.pos.x * 0.12, 5.4, far, ball.pos.x * 0.15, 1.9, 0);
+        if (ctx.frontView) { // from behind our side, looking over the net
+          // Far enough back to see the whole court, and it backs away with you as you retreat.
+          const back = Math.max(9.5, 14 / ctx.camera.aspect);
+          const retreat = (-3 - P.c.position.x) * 0.9; // > 0 when you are behind your starting spot
+          ctx.cam(-CL - back - retreat, 6.6 + Math.max(retreat, 0) * 0.25, P.c.position.z * 0.35, 0.5 - retreat * 0.3, 1.5, ball.pos.z * 0.2);
+        } else {
+          const far = Math.max(13.5, 22 / ctx.camera.aspect);
+          ctx.cam(ball.pos.x * 0.12, 5.4, far, ball.pos.x * 0.15, 1.9, 0);
+        }
         hud.set({
           left: chip(ctx.emoji(P.c.id), P.score, ctx.colorOf(P.c.id)),
           right: chip(ctx.emoji(Q.c.id), Q.score, ctx.colorOf(Q.c.id)),

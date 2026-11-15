@@ -59,6 +59,16 @@ export class Character {
     this.height = size.y || scale;
     this.radius = (Math.max(size.x, size.z) * 0.5 || 0.4) * 0.92;
 
+    // Invisible capsule used for clicking/hovering (more forgiving than the mesh itself).
+    const hit = new THREE.Mesh(
+      new THREE.CylinderGeometry(this.radius, this.radius, this.height, 12),
+      new THREE.MeshBasicMaterial({ visible: false }),
+    );
+    hit.position.y = this.height / 2;
+    hit.userData.character = this;
+    this.hitProxy = hit;
+    this.root.add(hit);
+
     this.mixer = new THREE.AnimationMixer(this.model);
     this.clips = gltf.animations;
     this.actions = {};
@@ -79,14 +89,23 @@ export class Character {
     this.knock = new THREE.Vector3();     // knock-back, decays on its own
     this.floorY = 0;                      // height of the ground under us
     this.speedMul = 1;                    // handicap / boost
-    this.state = 'ground';                // ground | jumpStart | air | land
+    this.state = 'ground';                // ground | jumpStart | air | land | preview
     this.current = null;
+    this.previewClip = null;
+    this.timeScale = 1;                   // the inspector's speed slider
     this.play(this.roles.idle, 0);
     if (this.current) this.current.time = Math.random() * this.current.getClip().duration;
   }
 
   get position() { return this.root.position; }
-  get grounded() { return this.state === 'ground' || this.state === 'land'; }
+  get grounded() { return this.state === 'ground' || this.state === 'land' || this.state === 'preview'; }
+  /** Short description of what the character is doing (Testing Ground inspector). */
+  get displayState() {
+    if (this.state === 'preview') return `preview: ${this.previewClip}`;
+    const v = Math.hypot(this.velocity.x, this.velocity.z);
+    const speed = v > 0.05 ? ` ${v.toFixed(1)} m/s` : '';
+    return (this.state === 'ground' ? this.locoRole || 'idle' : this.state) + speed;
+  }
   /** Horizontal speed including knock-back. */
   get vx() { return this.velocity.x + this.knock.x; }
   get vz() { return this.velocity.z + this.knock.z; }
@@ -135,6 +154,13 @@ export class Character {
   }
 
   playRole(role, fade, opts) { this.play(this.roles[role], fade, opts); }
+
+  /** Preview an arbitrary clip (Testing Ground inspector); moving cancels it. */
+  preview(clipName) {
+    this.previewClip = clipName;
+    this.state = 'preview';
+    this.play(clipName, 0.15, { once: false });
+  }
 
   onClipFinished(action) {
     if (action !== this.current) return;
@@ -190,8 +216,10 @@ export class Character {
    */
   update(dt, input) {
     const o = this.opts;
+    dt *= this.timeScale;
     const mag = input ? Math.hypot(input.x, input.z) : 0;
     const moving = mag > 0.05;
+    if (this.state === 'preview' && moving) { this.state = 'ground'; this.updateLocomotionClip(true, moving, input.run !== false); }
     const run = moving && input.run !== false;
     const gait = moving ? this.gaits[run ? 'run' : 'walk'] : null;
 
@@ -275,6 +303,8 @@ export class Character {
     this.mixer.stopAllAction();
     this.mixer.uncacheRoot(this.model);
     this.root.removeFromParent();
+    this.hitProxy.geometry.dispose();
+    this.hitProxy.material.dispose();
     for (const e of this.fabric?.entries || []) {
       e.fabric.dispose();
       for (const s of e.shells) s.material.dispose();

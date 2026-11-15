@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { buildForest, plushMaterial, canvasTexture, makeMarker, Scatter, mulberry32, PALETTE } from '../forest.js';
+import { applySceneryShader } from '../scenery-shader.js';
 import { separateCharacters } from '../physics.js';
 import { chip } from './common.js';
 
@@ -19,7 +20,8 @@ export default {
     ctx.setMood('golden');
     ctx.setShadowArea(0, 0, 9);
 
-    const forest = buildForest({ seed: 33, clearing: 12, keepOut: (x, z) => Math.hypot(x, z) < R + 3.6, trees: 80 });
+    const forest = buildForest({ seed: 33, clearing: 12, keepOut: (x, z) => Math.hypot(x, z) < R + 3.6, trees: 80,
+      surface: (x, z) => (Math.hypot(x, z) < R + 0.8 ? 'bare' : undefined) }); // nothing grows under the stump
     forest.name = 'forest';
     forest.position.y = -DROP;
     root.add(forest);
@@ -27,7 +29,7 @@ export default {
     // Tree stump with a big round cushion on top.
     const stage = new THREE.Group();
     const stump = new THREE.Mesh(new THREE.CylinderGeometry(R + 0.25, R + 0.7, DROP - 0.4, 14),
-      new THREE.MeshStandardMaterial({ color: PALETTE.woodDark, roughness: 1, flatShading: true }));
+      applySceneryShader(new THREE.MeshStandardMaterial({ color: PALETTE.woodDark, roughness: 1, flatShading: true }), 'log'));
     stump.position.y = -0.4 - (DROP - 0.4) / 2;
     const stumpTop = new THREE.Mesh(new THREE.CylinderGeometry(R + 0.25, R + 0.25, 0.06, 14),
       new THREE.MeshStandardMaterial({ color: PALETTE.woodLight, roughness: 1, flatShading: true }));

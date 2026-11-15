@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { applySceneryShader } from './scenery-shader.js';
+import { createGrass, applyGroundShader } from './grass.js';
 
 /*
  * Forest kit shared by every game. Trees, bushes, rocks, stumps, mushrooms and flowers
@@ -24,7 +26,7 @@ const GEO = {
   log: new THREE.CylinderGeometry(1, 1, 1, 8),
 };
 const flat = (opts = {}) => new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.95, metalness: 0, flatShading: true, ...opts });
-const MAT = { solid: flat(), ground: new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1 }) };
+const MAT = { solid: flat(), ground: applyGroundShader(new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1 })) };
 
 /*
  * Scenery models. Every `assets/<name>/<name>.glb` is picked up here, so dropping a new
@@ -51,6 +53,7 @@ export async function loadScenery() {
     // Matte painted look; the exported material carries glass settings we don't want.
     const mat = new THREE.MeshStandardMaterial({ map: mesh.material.map, roughness: 0.92, metalness: 0 });
     if (mat.map) mat.map.anisotropy = 8;
+    applySceneryShader(mat, name); // leaf / bark / stone detail, off unless switched on in the settings
     MODELS[name] = { geo, mat };
   }));
 }
@@ -157,13 +160,14 @@ export function addGroundPatch(sc, rng, x, z, r) {
 /**
  * A clearing in the woods: grass, a ring of trees, and small decorations.
  * @param keepOut (x, z) => true where nothing may be placed (the play area)
+ * @param surface (x, z) => 'bare' | { h, color } | undefined: what grows there (see grass.js)
  */
-export function buildForest({ seed = 1, clearing = 18, keepOut = () => false, solidOut = keepOut, trees = 90, deco = 1 } = {}) {
+export function buildForest({ seed = 1, clearing = 18, keepOut = () => false, solidOut = keepOut, trees = 90, deco = 1, surface } = {}) {
   const rng = mulberry32(seed);
   const group = new THREE.Group();
 
   const ground = new THREE.Mesh(new THREE.CircleGeometry(140, 48).rotateX(-Math.PI / 2),
-    new THREE.MeshStandardMaterial({ color: PALETTE.grass, roughness: 1 }));
+    applyGroundShader(new THREE.MeshStandardMaterial({ color: PALETTE.grass, roughness: 1 })));
   ground.receiveShadow = true;
   group.add(ground);
 
@@ -188,6 +192,7 @@ export function buildForest({ seed = 1, clearing = 18, keepOut = () => false, so
   for (let i = 0; i < 7 * deco; i++) { const [x, z] = ring(clearing - 4, clearing + 6); if (open(x, z)) addStump(sc, rng, x, z); }
   for (let i = 0; i < 46; i++) { const [x, z] = ring(0, clearing + 20); addGroundPatch(sc, rng, x, z, 1.2 + rng() * 3); }
   group.add(sc.build());
+  group.add(createGrass({ seed, clearing, surface })); // planted by the engine, from the settings
 
   // A few puffy clouds, far away.
   const cloudMat = new THREE.MeshBasicMaterial({ color: 0xffffff, fog: false, transparent: true, opacity: 0.92 });
@@ -210,8 +215,8 @@ export function buildForest({ seed = 1, clearing = 18, keepOut = () => false, so
 /** A single log lying between two points (fences, goals, borders). */
 export function makeLog(a, b, radius = 0.12, color = PALETTE.wood) {
   const va = new THREE.Vector3(...a), vb = new THREE.Vector3(...b);
-  const mesh = new THREE.Mesh(GEO.log, flat({ color }));
   const len = va.distanceTo(vb);
+  const mesh = new THREE.Mesh(GEO.log, applySceneryShader(flat({ color }), 'log', [radius, len, radius]));
   mesh.scale.set(radius, len, radius);
   mesh.position.copy(va).add(vb).multiplyScalar(0.5);
   mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), vb.sub(va).normalize());

@@ -5,20 +5,31 @@ import { Character } from './character.js';
 import { FabricFX } from './fabric.js';
 import { sfx } from './audio.js';
 import { loadScenery } from './forest.js';
+import { Graphics, loadSettings, saveSettings } from './graphics.js';
+import { sceneryUniforms } from './scenery-shader.js';
+import { grassUniforms, groundUniforms, applyGrassSettings, updateGrassDetail, MAX_PUSHERS } from './grass.js';
 
 // Sky / light moods. Games pick one, or blend between two (the herding game's sunset).
 export const MOODS = {
   day: { top: 0x7cc4f5, horizon: 0xe6f6ff, sun: 0xfff1d6, sunI: 3.0, hemiSky: 0xe4f2ff, hemiGround: 0x86b56c, hemiI: 1.05, env: 0.35, sunDir: [6, 14, 7] },
   golden: { top: 0x9cc3e8, horizon: 0xffe6c2, sun: 0xffd09a, sunI: 3.1, hemiSky: 0xffeedd, hemiGround: 0x8fae68, hemiI: 0.9, env: 0.3, sunDir: [10, 9, 6] },
   dusk: { top: 0x4a5596, horizon: 0xf8b189, sun: 0xffa56e, sunI: 2.3, hemiSky: 0xb3b2e6, hemiGround: 0x7a8f66, hemiI: 0.9, env: 0.26, sunDir: [12, 5, 4] },
+  // Indoor looks for the Testing Ground (plain backdrop, from three-stuff-demo).
+  studio: { top: 0xeef0f3, horizon: 0xeef0f3, sun: 0xffffff, sunI: 3.0, hemiSky: 0xffffff, hemiGround: 0xb9c1ce, hemiI: 0.9, env: 0.35, sunDir: [3, 14, 4.5], fog: [35, 140] },
+  warm: { top: 0xf1e6da, horizon: 0xf1e6da, sun: 0xffd3a6, sunI: 3.0, hemiSky: 0xfff0dd, hemiGround: 0xc2b4a8, hemiI: 0.85, env: 0.3, sunDir: [10, 7, 5], fog: [30, 120] },
+  overcast: { top: 0xe7ebf0, horizon: 0xe7ebf0, sun: 0xffffff, sunI: 1.1, hemiSky: 0xf5f8fc, hemiGround: 0xc9d0da, hemiI: 1.7, env: 0.5, sunDir: [2, 14, 3], fog: [30, 120] },
+  bedtime: { top: 0x232a40, horizon: 0x232a40, sun: 0xffb36b, sunI: 1.2, hemiSky: 0x6f7fb8, hemiGround: 0x2a2840, hemiI: 0.45, env: 0.12, sunDir: [-4, 9, 5], fog: [6, 28] },
 };
+const FOG = [40, 150];
+const OUTDOOR = ['day', 'golden', 'dusk'];
 
 const $ = (id) => document.getElementById(id);
 
 export async function createEngine() {
   const app = $('app');
   const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  const basePixelRatio = Math.min(devicePixelRatio, 2);
+  renderer.setPixelRatio(basePixelRatio);
   renderer.setSize(innerWidth, innerHeight);
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFShadowMap;
@@ -31,7 +42,6 @@ export async function createEngine() {
   scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture; // soft reflections for the plush sheen
 
   const camera = new THREE.PerspectiveCamera(40, innerWidth / innerHeight, 0.1, 400);
-  camera.layers.enable(1); // fur-shell layer from fabric.js (unused unless shells are switched on)
 
   const hemi = new THREE.HemisphereLight();
   const sun = new THREE.DirectionalLight();
@@ -53,7 +63,15 @@ export async function createEngine() {
   const cA = new THREE.Color(), cB = new THREE.Color();
   const mix = (a, b, t) => cA.set(a).lerp(cB.set(b), t).clone();
 
-  function setMood(a, b = a, t = 0) {
+  let graphics = null; // created further down, once there is something to apply settings to
+  let mood = ['day', 'day', 0, false];
+  /**
+   * @param fixed true for looks the "Lighting" setting must not replace (the Testing Ground's room)
+   */
+  function setMood(a, b = a, t = 0, fixed = false) {
+    mood = [a, b, t, fixed];
+    const forced = !fixed && OUTDOOR.includes(graphics?.settings.lighting) ? graphics.settings.lighting : null;
+    if (forced) { a = b = forced; t = 0; }
     const A = MOODS[a], B = MOODS[b];
     const top = mix(A.top, B.top, t), horizon = mix(A.horizon, B.horizon, t);
     const g = skyCanvas.getContext('2d');
@@ -65,6 +83,9 @@ export async function createEngine() {
     g.fillRect(0, 0, 4, 256);
     skyTex.needsUpdate = true;
     scene.fog.color.copy(horizon);
+    const fa = A.fog ?? FOG, fb = B.fog ?? FOG;
+    scene.fog.near = THREE.MathUtils.lerp(fa[0], fb[0], t);
+    scene.fog.far = THREE.MathUtils.lerp(fa[1], fb[1], t);
     sun.color.copy(mix(A.sun, B.sun, t));
     sun.intensity = THREE.MathUtils.lerp(A.sunI, B.sunI, t);
     hemi.color.copy(mix(A.hemiSky, B.hemiSky, t));
@@ -121,7 +142,9 @@ export async function createEngine() {
   const input = {
     down: (...codes) => codes.some((c) => keys.has(c)),
     hit: (...codes) => codes.some((c) => pressed.has(c)),
-    /** WASD / arrows as a world-space direction for a camera that looks along -Z. */
+    /** Set by a game whose camera looks along +X (from behind the player's side) instead of -Z. */
+    front: false,
+    /** WASD / arrows as a world-space direction, relative to where the camera looks. */
     move() {
       let x = 0, z = 0;
       if (keys.has('KeyA') || keys.has('ArrowLeft')) x -= 1;
@@ -129,7 +152,8 @@ export async function createEngine() {
       if (keys.has('KeyW') || keys.has('ArrowUp')) z -= 1;
       if (keys.has('KeyS') || keys.has('ArrowDown')) z += 1;
       const l = Math.hypot(x, z);
-      return l ? { x: x / l, z: z / l } : { x: 0, z: 0 };
+      if (!l) return { x: 0, z: 0 };
+      return this.front ? { x: -z / l, z: x / l } : { x: x / l, z: z / l };
     },
   };
 
@@ -210,12 +234,21 @@ export async function createEngine() {
   function start(def, options = {}) {
     stop();
     paused = false;
+    input.front = false;
     const root = new THREE.Group();
     scene.add(root);
     const chars = [];
     const state = { def, root, chars, over: false, fresh: true };
     const ctx = {
-      THREE, scene, root, camera, input, hud, sfx, burst, setMood, setShadowArea, WINO, COOKIE,
+      THREE, scene, root, camera, renderer, graphics, input, hud, sfx, burst, setMood, setShadowArea, WINO, COOKIE,
+      ids,
+      entryOf: (id) => assets[id].entry,
+      /** True when the "Game view" setting asks for the view from behind the player's side. Also turns the keys to match. */
+      get frontView() { return (input.front = graphics.settings.view === 'front'); },
+      /** Set to true by a game that drives the camera itself (the Testing Ground). */
+      freeCamera: false,
+      /** Distance from the camera to what should be sharp (toy camera). */
+      focusDistance: null,
       auto: !!options.auto,
       /** The species the player picked, and the other one. */
       playerId: options.playerId ?? WINO,
@@ -223,12 +256,12 @@ export async function createEngine() {
       emoji: (id) => (id === WINO ? '🐧' : '🦌'),
       nameOf: (id) => assets[id].entry.name,
       colorOf: (id) => assets[id].entry.color,
-      /** Add a stuffy to the scene, fabric shading on. */
+      /** Add a stuffy to the scene, dressed the way the settings say. */
       spawn(id, overrides = {}) {
         const { entry, gltf } = assets[id];
         const c = new Character(gltf, { ...entry, ...BASE[id], ...overrides });
         c.fabric = new FabricFX(c, entry.fabric);
-        c.fabric.apply({ fabric: true, fuzz: false, furLength: 1 });
+        c.fabric.apply(fabricOf(graphics.settings));
         root.add(c.root);
         chars.push(c);
         return c;
@@ -255,8 +288,27 @@ export async function createEngine() {
     hud.hint('');
     el.banner.classList.remove('pop');
     state.game = def.create(ctx);
+    root.traverse((o) => { if (o.name === 'grass') { state.grass = o; applyGrassSettings(o, graphics.settings); } });
     return state;
   }
+
+  // --- graphics settings (the gear) ------------------------------------------
+  graphics = new Graphics({ renderer, scene, camera, sun, basePixelRatio });
+  const fabricOf = (s) => ({ fabric: s.fabric, fuzz: s.fuzz, furLength: s.furLength });
+  graphics.onChange((s, prev) => {
+    sceneryUniforms.uScnDetail.value = s.sceneryDetail ? s.sceneryStrength : 0;
+    sceneryUniforms.uScnWind.value = s.wind;
+    grassUniforms.uGrassWind.value = s.wind;
+    grassUniforms.uGrassHeight.value = s.grassHeight;
+    groundUniforms.uGroundGrass.value = s.grass ? 1 : 0;
+    if (s.lighting !== prev.lighting) setMood(...mood);
+    if (current) {
+      for (const c of current.chars) c.fabric?.apply(fabricOf(s));
+      current.root.traverse((o) => { if (o.name === 'grass') applyGrassSettings(o, s); });
+    }
+    saveSettings(s);
+  });
+  graphics.set(loadSettings());
 
   const speed = Math.max(1, Math.min(20, Number(new URLSearchParams(location.search).get('speed')) || 1));
   const timer = new THREE.Timer();
@@ -267,28 +319,42 @@ export async function createEngine() {
     if (current && !paused) {
       for (let i = 0; i < speed; i++) current.game.update(dt); // ?speed=N fast-forwards (testing)
       updateBits(dt);
+      grassUniforms.uGrassTime.value = sceneryUniforms.uScnTime.value = (sceneryUniforms.uScnTime.value + dt) % 3600;
+      // Whoever is on the ground presses the grass down around them.
+      const push = grassUniforms.uGrassPush.value;
+      const pushers = Math.min(current.chars.length, MAX_PUSHERS);
+      for (let i = 0; i < pushers; i++) {
+        const c = current.chars[i];
+        push[i].set(c.position.x, c.position.y, c.position.z, c.radius * 1.5 + 0.12);
+      }
+      grassUniforms.uGrassPushCount.value = pushers;
       const k = current.fresh ? 1 : 1 - Math.exp(-4 * dt);
       current.fresh = false;
-      camera.position.lerp(camGoal.pos, k);
-      camLook.lerp(camGoal.look, k);
-      camera.lookAt(camLook);
+      if (!current.ctx.freeCamera) {
+        camera.position.lerp(camGoal.pos, k);
+        camLook.lerp(camGoal.look, k);
+        camera.lookAt(camLook);
+      }
       const clouds = current.root.getObjectByName('forest')?.userData.clouds;
       if (clouds) clouds.rotation.y += dt * 0.004;
       if (bannerTimer > 0 && (bannerTimer -= dt) <= 0) el.banner.classList.remove('pop');
     }
     pressed.clear();
-    renderer.render(scene, camera);
+    if (current?.grass) updateGrassDetail(current.grass, camera);
+    graphics.render(current?.ctx.focusDistance ?? camera.position.distanceTo(camLook));
+    current?.game.afterRender?.();
   }
   renderer.setAnimationLoop(frame);
 
   addEventListener('resize', () => {
     camera.aspect = innerWidth / innerHeight;
     camera.updateProjectionMatrix();
-    renderer.setSize(innerWidth, innerHeight);
+    graphics.resize();
+    current?.game.resize?.();
   });
 
   return {
-    renderer, scene, camera, hud, input, WINO, COOKIE, assets,
+    renderer, scene, camera, hud, input, WINO, COOKIE, assets, graphics,
     start, stop,
     get current() { return current; },
     get paused() { return paused; },

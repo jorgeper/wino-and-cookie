@@ -12,14 +12,25 @@ export default {
   title: 'Forest Soccer',
   emoji: '⚽',
   blurb: 'Three a side in a forest clearing. Bump the ball into the log goal.',
-  controls: '<kbd>WASD</kbd> move · <kbd>Space</kbd> kick / jump · <kbd>Q</kbd> switch player',
+  controls: '<kbd>WASD</kbd> move · <kbd>Shift</kbd> sprint · <kbd>J</kbd> dash · <kbd>Space</kbd> kick / jump · <kbd>K</kbd> switch player',
 
   create(ctx) {
     const { root, hud, sfx, input } = ctx;
     ctx.setMood('day');
     ctx.setShadowArea(0, 0, 17);
 
-    const forest = buildForest({ seed: 7, clearing: 21, keepOut: (x, z) => Math.abs(x) < L + 3 && Math.abs(z) < W + 2 });
+    // Mown turf on the pitch, in the same stripes as the paint, with gaps for the chalk lines.
+    const turf = (x, z) => {
+      const ax = Math.abs(x), az = Math.abs(z), t = 0.1;
+      if (ax > L + 0.85 || az > W + 0.85) return undefined;
+      const onLine = (Math.abs(ax - L) < t && az < W + t) || (Math.abs(az - W) < t && ax < L + t) || ax < t
+        || Math.abs(Math.hypot(x, z) - 2.4) < t || Math.hypot(x, z) < 0.24
+        || (Math.abs(ax - (L - 3.2)) < t && az < 4 + t) || (Math.abs(az - 4) < t && ax > L - 3.2 && ax < L);
+      if (onLine) return 'bare';
+      const stripe = Math.floor(((x + L + 1) / (L * 2 + 2)) * 14);
+      return { h: 0.075, color: stripe % 2 ? 0x86c766 : 0x97d374 };
+    };
+    const forest = buildForest({ seed: 7, clearing: 21, keepOut: (x, z) => Math.abs(x) < L + 3 && Math.abs(z) < W + 2, surface: turf });
     forest.name = 'forest';
     root.add(forest);
 
@@ -114,7 +125,7 @@ export default {
     const marker = ctx.own(makeMarker(0xffffff));
     root.add(marker);
 
-    let lastScorer = null;
+    let lastScorer = null, dashCd = 0;
     let phase = 'kickoff', phaseT = 1.4, timeLeft = MATCH, bumpCd = 0, roleT = 0;
     const v = new THREE.Vector3(), gd = new THREE.Vector3();
 
@@ -184,7 +195,15 @@ export default {
 
     function humanInput() {
       const c = me.c, m = input.move();
-      if (input.hit('KeyQ', 'KeyE', 'Tab')) { setMe(A.players[me === A.players[1] ? 2 : 1]); sfx.blip(); }
+      c.speedMul = input.down('ShiftLeft', 'ShiftRight') ? 1.3 : 1; // hold Shift to sprint
+      // J to dash: a quick burst the way you are steering, then a short breather.
+      if (dashCd <= 0 && c.grounded && input.hit('KeyJ')) {
+        const dir = m.x || m.z ? v.set(m.x, 0, m.z) : c.facing(v);
+        c.knock.addScaledVector(dir, 10);
+        dashCd = 1.1;
+        sfx.bump();
+        ctx.burst(v.set(c.position.x, 0.15, c.position.z), { count: 8, colors: [0xffffff, 0xd8f0c0], speed: 1.6, up: 1.5, life: 0.5, size: 0.07 });
+      }
       if (input.hit('Space')) {
         const rx = ball.pos.x - c.position.x, rz = ball.pos.z - c.position.z, d = Math.hypot(rx, rz) || 1;
         const dir = m.x || m.z ? v.set(m.x, 0, m.z) : c.facing(v);
@@ -219,6 +238,7 @@ export default {
       update(dt) {
         phaseT -= dt;
         bumpCd -= dt;
+        dashCd -= dt;
         if (phase === 'kickoff' && phaseT <= 0) phase = 'play';
         if (phase === 'goal' && phaseT <= 0 && !ctx.over) { resetPositions(); phase = 'kickoff'; phaseT = 1.1; sfx.whistle(); }
 
@@ -228,6 +248,9 @@ export default {
           if ((roleT -= dt) <= 0) { assignRoles(); roleT = 0.35; }
         }
 
+        // K hands control to the other outfield player. Done once per frame, before anyone
+        // moves (inside the loop below both players would see the key and swap straight back).
+        if (live && !ctx.auto && input.hit('KeyK')) { setMe(A.players[me === A.players[1] ? 2 : 1]); sfx.blip(); }
         for (const p of all) {
           p.kickCd -= dt;
           let inp = null;
@@ -272,7 +295,10 @@ export default {
         marker.scale.setScalar(me.c.radius * 1.55 + Math.sin(performance.now() / 180) * 0.03);
         marker.visible = !ctx.over;
 
-        ctx.cam(b.x * 0.55, 12.5, 18.5 + b.z * 0.15, b.x * 0.62, 0.4, b.z * 0.3);
+        if (ctx.frontView) { // from behind our goal, looking up the pitch at theirs
+          const back = Math.max(15, 24 / ctx.camera.aspect);
+          ctx.cam(b.x * 0.75 - back, 10.5, b.z * 0.45, b.x * 0.75 + 3, 0.4, b.z * 0.5);
+        } else ctx.cam(b.x * 0.55, 12.5, 18.5 + b.z * 0.15, b.x * 0.62, 0.4, b.z * 0.3);
         updateHud();
 
         if (timeLeft <= 0 && !ctx.over) {

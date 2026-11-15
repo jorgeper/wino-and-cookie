@@ -1,0 +1,13 @@
+{
+  "cookie-animations": {
+    "name": "Cookie",
+    "color": "#d98b5f",
+    "fabric": "velour"
+  },
+  "penguin-game-refined": {
+    "name": "Wino",
+    "color": "#4f7cff",
+    "scale": 2,
+    "fabric": { "default": "terry", "materials": { "tripo_mat_7ef54b04": "felt" } }
+  }
+}

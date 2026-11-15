@@ -27,19 +27,20 @@
     <main id="menu" hidden>
       <header>
         <h1>Wino and Cookie Games</h1>
-        <p class="tag">Four cozy little games in the forest</p>
+        <p class="tag">Four cozy little games in the forest, and a room to play around in</p>
         <div class="who-row">
           <span>Play as</span>
           <div id="who" role="group" aria-label="Play as"></div>
         </div>
       </header>
       <div id="cards"></div>
-      <p class="foot">Press <kbd>1</kbd>–<kbd>4</kbd> to start · <kbd>Esc</kbd> pauses · <kbd>M</kbd> mutes</p>
+      <p class="foot">Press <kbd>1</kbd>–<kbd>5</kbd> to start · <kbd>Esc</kbd> pauses · <kbd>M</kbd> mutes · <kbd>G</kbd> graphics</p>
     </main>
 
     <div id="pause" class="overlay" hidden>
       <div class="sheet">
         <h2>Paused</h2>
+        <p class="keys" id="pause-keys"></p>
         <div class="row">
           <button id="resume" class="primary">Keep playing</button>
           <button id="quit">Back to menu</button>
@@ -57,6 +58,120 @@
         </div>
       </div>
     </div>
+
+    <div id="testing" hidden>
+      <aside class="tg-side">
+        <section class="tg-card tg-help">
+          <h1>Testing Ground</h1>
+          <ul>
+            <li><b>Click</b> a character to control it</li>
+            <li><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> move &nbsp;<kbd>Shift</kbd> run &nbsp;<kbd>Space</kbd> jump</li>
+            <li><b>Mouse</b> look around &nbsp;<b>Scroll</b> zoom</li>
+            <li><kbd>Tab</kbd> next character &nbsp;<kbd>Esc</kbd> free mouse, again to release</li>
+          </ul>
+          <label class="tg-row"><span>Room light</span>
+            <select id="tg-room">
+              <option value="studio">Studio</option>
+              <option value="warm">Golden hour</option>
+              <option value="overcast">Soft overcast</option>
+              <option value="bedtime">Bedtime</option>
+            </select></label>
+          <div class="tg-buttons">
+            <button id="tg-photo" title="Freeze the moment and path-trace it">📷 Photo mode</button>
+          </div>
+        </section>
+        <section class="tg-card tg-inspector" id="tg-inspector" hidden>
+          <header>
+            <span class="tg-dot" id="tg-dot"></span>
+            <h2 id="tg-name"></h2>
+            <span class="tg-state" id="tg-state"></span>
+          </header>
+          <h3>Animations <small>click to preview</small></h3>
+          <div class="tg-clips" id="tg-clips"></div>
+          <label class="tg-row"><span>Anim speed</span>
+            <input type="range" id="tg-speed" min="0.1" max="2" step="0.05" value="1" />
+            <output id="tg-speed-out">1.00×</output></label>
+          <label class="tg-row tg-check"><input type="checkbox" id="tg-skeleton" /> Show skeleton</label>
+          <p class="tg-source" id="tg-source"></p>
+        </section>
+      </aside>
+      <div id="tg-tags"></div>
+      <nav id="tg-roster"></nav>
+      <div id="tg-hint"></div>
+      <div id="tg-status"></div>
+      <div id="tg-photo-bar" hidden>
+        <span>Path tracing · <b id="tg-photo-samples">0</b> samples</span>
+        <span class="tg-muted">drag to orbit (restarts)</span>
+        <button id="tg-photo-save">Save PNG</button>
+        <button id="tg-photo-exit" class="ghost">Exit <kbd>Esc</kbd></button>
+      </div>
+    </div>
+
+    <div id="fps" title="Frames per second"></div>
+    <button id="gear" title="Graphics settings (G)" aria-label="Graphics settings" aria-expanded="false">⚙</button>
+    <aside id="settings" hidden aria-label="Graphics settings">
+      <header>
+        <h2>Graphics</h2>
+        <button id="gfx-close" title="Close" aria-label="Close">✕</button>
+      </header>
+      <div class="gfx-body">
+        <h3>Wino &amp; Cookie</h3>
+        <label class="row check"><input type="checkbox" data-gfx="fabric" /> Fabric shading <small>sheen + pile</small></label>
+        <label class="row check"><input type="checkbox" data-gfx="fuzz" /> Fuzzy fur</label>
+        <label class="row"><span>Fur length</span>
+          <input type="range" data-gfx="furLength" data-needs="fuzz" min="0.3" max="2.5" step="0.05" /><output data-out="furLength"></output></label>
+
+        <h3>Scenery</h3>
+        <label class="row check"><input type="checkbox" data-gfx="sceneryDetail" /> Scenery detail <small>leaves, bark, stone</small></label>
+        <label class="row"><span>Strength</span>
+          <input type="range" data-gfx="sceneryStrength" data-needs="sceneryDetail" min="0.3" max="2" step="0.05" /><output data-out="sceneryStrength"></output></label>
+
+        <h3>Grass</h3>
+        <label class="row check"><input type="checkbox" data-gfx="grass" /> Grass</label>
+        <label class="row"><span>Density</span>
+          <input type="range" data-gfx="grassDensity" data-needs="grass" data-lazy min="0.25" max="2" step="0.05" /><output data-out="grassDensity"></output></label>
+        <label class="row"><span>Height</span>
+          <input type="range" data-gfx="grassHeight" data-needs="grass" min="0.4" max="2.5" step="0.05" /><output data-out="grassHeight"></output></label>
+        <label class="row"><span>Wind</span>
+          <input type="range" data-gfx="wind" min="0" max="2.5" step="0.05" /><output data-out="wind"></output></label>
+
+        <h3>Light &amp; shadow</h3>
+        <label class="row"><span>Lighting</span>
+          <select data-gfx="lighting">
+            <option value="auto">Auto (each game's own)</option>
+            <option value="day">Day</option>
+            <option value="golden">Golden hour</option>
+            <option value="dusk">Dusk</option>
+          </select></label>
+        <label class="row"><span>Shadows</span>
+          <select data-gfx="shadows">
+            <option value="standard">Standard</option>
+            <option value="soft">Extra soft</option>
+            <option value="crisp">Crisp HD</option>
+          </select></label>
+        <label class="row check"><input type="checkbox" data-gfx="ao" /> Ambient occlusion</label>
+
+        <h3>Camera</h3>
+        <label class="row"><span>Game view</span>
+          <select data-gfx="view" title="Soccer and volleyball">
+            <option value="front">Behind your side</option>
+            <option value="side">From the sideline</option>
+          </select></label>
+        <label class="row"><span>Anti-aliasing</span>
+          <select data-gfx="aa">
+            <option value="msaa">Standard (MSAA)</option>
+            <option value="smaa">SMAA</option>
+            <option value="ssaa">Supersample 1.5×</option>
+          </select></label>
+        <label class="row check"><input type="checkbox" data-gfx="tiltShift" /> Toy camera <small>tilt-shift blur</small></label>
+        <label class="row check"><input type="checkbox" data-gfx="grade" /> Cozy colour grade</label>
+
+        <div class="buttons">
+          <button id="gfx-best" title="Turn on everything that looks good">Make it pretty</button>
+          <button id="gfx-reset" class="ghost">Reset</button>
+        </div>
+      </div>
+    </aside>
 
     <div id="loading">Fluffing the stuffies…</div>
     <script type="module" src="/src/main.js"></script>
