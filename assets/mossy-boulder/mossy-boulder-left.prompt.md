@@ -4,7 +4,7 @@ Generated using the built-in image generation tool.
 
 ## References
 
-Image 1 — style only: /Users/jorgeper/throwaway/stuffy-game/.agents/skills/cozy-game-assets/references/style-tree.png
+Image 1 — style only: .agents/skills/cozy-game-assets/references/style-tree.png
 
 Image 2 — front identity: /Users/jorgeper/.codex/generated_images/01a1dc8b-5d17-71f1-8562-38bbdc24be45/exec-203fa637-7e0e-4070-abbc-b89b15f5782b.png
 

@@ -3,6 +3,6 @@ Subject: a single low compact wildflower clump with exactly five chunky flowers,
 View: direct RIGHT view. Image 2 is the FRONT identity reference of this exact object. Rotate viewpoint to the object's own right side; preserve geometry, proportions, part counts and placement, colors and markings. Do not mirror or redesign. Newly visible surfaces continue the same design.
 
 References:
-Style reference: /Users/jorgeper/throwaway/stuffy-game/.agents/skills/cozy-game-assets/references/style-tree.png
-Identity reference: /Users/jorgeper/throwaway/stuffy-game/assets/wildflower-clump/wildflower-clump-front.png
+Style reference: .agents/skills/cozy-game-assets/references/style-tree.png
+Identity reference: assets/wildflower-clump/wildflower-clump-front.png
 

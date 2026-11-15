@@ -3,6 +3,6 @@ Subject: a single compact cluster of exactly three mushrooms sharing one small l
 View: direct RIGHT view. Image 2 is the FRONT identity reference of this exact object. Rotate viewpoint to the object's own right side; preserve geometry, proportions, part counts and placement, colors and markings. Do not mirror or redesign. Newly visible surfaces continue the same design.
 
 References:
-Style reference: /Users/jorgeper/throwaway/stuffy-game/.agents/skills/cozy-game-assets/references/style-tree.png
-Identity reference: /Users/jorgeper/throwaway/stuffy-game/assets/mushroom-cluster/mushroom-cluster-front.png
+Style reference: .agents/skills/cozy-game-assets/references/style-tree.png
+Identity reference: assets/mushroom-cluster/mushroom-cluster-front.png
 

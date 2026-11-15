@@ -1,7 +1,7 @@
 // Tiny synthesised sound effects (no audio files). Muted with M.
 let ctx = null;
 let muted = false;
-try { muted = localStorage.getItem('stuffy-muted') === '1'; } catch { /* private window */ }
+try { muted = localStorage.getItem('wino-and-cookie-muted') === '1'; } catch { /* private window */ }
 
 function ac() {
   if (!ctx) {
@@ -44,7 +44,7 @@ export const sfx = {
   whistle: () => tone(1500, { dur: 0.3, type: 'sine', gain: 0.06, slide: 200 }),
   toggleMute() {
     muted = !muted;
-    try { localStorage.setItem('stuffy-muted', muted ? '1' : '0'); } catch { /* ignore */ }
+    try { localStorage.setItem('wino-and-cookie-muted', muted ? '1' : '0'); } catch { /* ignore */ }
     return muted;
   },
   get muted() { return muted; },

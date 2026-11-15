@@ -37,6 +37,8 @@ After re-exporting in the demo, copy them over again:
 cp ../three-stuff-demo/public/models/* public/models/
 ```
 
+Cookie's file is called `cookie-animations.glb` here. The demo exports it under a different name, so after copying, rename it and keep the `id` and `url` in `manifest.json` in step.
+
 Sizes here differ from the playground (Wino 1.25, Cookie 1) so the games are fair; see `BASE` in `src/engine.js`.
 
 ## Handy URL switches

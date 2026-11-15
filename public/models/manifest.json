@@ -130,9 +130,9 @@
       }
     },
     {
-      "id": "stuffy-game-animations",
-      "source": "characters/stuffy-game-animations.blend",
-      "url": "models/stuffy-game-animations.glb?v=1794693833354",
+      "id": "cookie-animations",
+      "source": "characters/cookie-animations.blend",
+      "url": "models/cookie-animations.glb?v=1794693833354",
       "name": "Cookie",
       "clips": [
         "Idle",

@@ -45,7 +45,7 @@ function setPaused(p) {
 
 function pickCharacter(id) {
   playerId = id;
-  try { localStorage.setItem('stuffy-player', id); } catch { /* private window */ }
+  try { localStorage.setItem('wino-and-cookie-player', id); } catch { /* private window */ }
   for (const b of document.querySelectorAll('#who button')) b.setAttribute('aria-pressed', String(b.dataset.id === id));
 }
 
@@ -63,7 +63,7 @@ async function boot() {
     who.appendChild(b);
   }
   let saved = null;
-  try { saved = localStorage.getItem('stuffy-player'); } catch { /* private window */ }
+  try { saved = localStorage.getItem('wino-and-cookie-player'); } catch { /* private window */ }
   pickCharacter(engine.assets[saved] ? saved : engine.WINO);
 
   // Game cards

@@ -3,5 +3,5 @@ Subject: a single plain small rounded river rock, asymmetrical squat pebble with
 View: direct FRONT view.
 
 References:
-Style reference: /Users/jorgeper/throwaway/stuffy-game/.agents/skills/cozy-game-assets/references/style-tree.png
+Style reference: .agents/skills/cozy-game-assets/references/style-tree.png
 
