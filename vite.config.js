@@ -33,6 +33,9 @@ function blenderWatch() {
 
 const watching = !!process.env.BLENDER_WATCH;
 export default defineConfig({
+  // Relative asset URLs, so the build runs from a subfolder such as
+  // jorgeper.github.io/wino-and-cookie/ as well as from a domain root.
+  base: './',
   plugins: watching ? [blenderWatch()] : [],
   // Don't let Vite's own reload fire on every GLB write; the plugin reloads once when done.
   server: watching ? { watch: { ignored: ['**/public/models/**'] } } : {},
